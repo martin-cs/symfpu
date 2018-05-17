@@ -14,7 +14,6 @@
 **
 */
 
-#include <malloc.h>
 #include <cassert>
 #include <map>
 
