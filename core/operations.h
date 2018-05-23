@@ -471,7 +471,13 @@ namespace symfpu {
 
     POSTCONDITION(res.normalised.extract(width-1,width-1).isAllZeros() == res.isZero);
     POSTCONDITION(IMPLIES(res.isZero, res.shiftAmount.isAllZeros()));
-    POSTCONDITION(res.shiftAmount < ubv(res.shiftAmount.getWidth(), width));
+
+    bwt shiftAmountWidth(res.shiftAmount.getWidth());
+    bwt widthBits(bitsToRepresent(width));
+    POSTCONDITION(shiftAmountWidth == widthBits ||
+		  shiftAmountWidth == widthBits - 1); // If width is an exact power of 2
+    ubv widthBV(widthBits, width);
+    POSTCONDITION(res.shiftAmount.matchWidth(widthBV) < widthBV);
 
     return res;
   }
