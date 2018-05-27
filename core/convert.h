@@ -235,7 +235,9 @@ template <class t>
  }
 
 
- 
+ // Common conversion code for both convert to sgined and to unsigned.
+ // Note that the results will be junk if it is not in bounds, etc.
+ // convertFloatToUBV and convertFloatToSBV handle all of that logic.
  template <class t>
    significandRounderResult<t> convertFloatToBV (const typename t::fpt &format,
 						 const typename t::rm &roundingMode,
@@ -252,7 +254,8 @@ template <class t>
    PRECONDITION(decimalPointPosition < targetWidth);
 
 
-   // TODO : fast path the RTZ case
+   // TODO : fast path the RTZ / don't need to round case
+   // TODO : compact in the case targetWidth < significantWidth
 
    bwt maxShift(targetWidth + 1); // + 1 as we have to shift over the guard bit
    bwt maxShiftBits(bitsToRepresent(maxShift) + 1); // +1 as we want it to be signed
@@ -291,6 +294,8 @@ template <class t>
    return rounded;
  }
 
+ // Decimal point position in the bit in the output on the left hand side of the decimal point
+ // I.E. if it is positive then it is converting to a fix-point number
  template <class t>
    typename t::ubv convertFloatToUBV (const typename t::fpt &format,
 				      const typename t::rm &roundingMode,
@@ -349,6 +354,8 @@ template <class t>
    return result;
  }
 
+  // Decimal point position in the bit in the output on the left hand side of the decimal point
+  // I.E. if it is positive then it is converting to a fix-point number
   template <class t>
     typename t::sbv convertFloatToSBV (const typename t::fpt &format,
 				       const typename t::rm &roundingMode,
