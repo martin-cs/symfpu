@@ -71,7 +71,14 @@ namespace symfpu {
    // Rounding mode doesn't matter as this is a strict extension
    unpackedFloat<t> extendedAddArgument(convertFloatToFloat(format, extendedFormat, t::RTZ(), addArgument));
 
-   unpackedFloat<t> additionResult(arithmeticAdd(extendedFormat, roundingMode, arithmeticMultiplyResult, extendedAddArgument, prop(true), prop(false)).uf);
+   prop knownInCorrectOrder(false);
+   exponentCompareInfo<t> ec(addExponentCompare<t>(arithmeticMultiplyResult.getExponent().getWidth() + 1,
+						   arithmeticMultiplyResult.getSignificand().getWidth(),
+						   arithmeticMultiplyResult.getExponent(),
+						   extendedAddArgument.getExponent(),
+						   knownInCorrectOrder));
+
+   unpackedFloat<t> additionResult(arithmeticAdd(extendedFormat, roundingMode, arithmeticMultiplyResult, extendedAddArgument, prop(true), knownInCorrectOrder, ec).uf);
    // Custom rounder flags are ignored as they are not applicable in this case
 
    fpt evenMoreExtendedFormat(extendedFormat.exponentWidth() + 1, extendedFormat.significandWidth() + 2);
