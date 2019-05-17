@@ -99,10 +99,10 @@ unpackedFloat<t> roundToIntegral (const typename t::fpt &format,
 
   
   // Otherwise, compute rounding location
-  sbv initialRoundingPoint(packedSigWidth - exponent);  // TODO : check bounds on this
+  sbv initialRoundingPoint(expandingSubtract<t>(packedSigWidth,exponent));  // Expansion only needed in obscure formats
   sbv roundingPoint(collar<t>(initialRoundingPoint,
-			      sbv::zero(exponentWidth),
-			      unpackedSigWidth.increment()));
+			      sbv::zero(exponentWidth + 1),
+			      unpackedSigWidth.extend(1).increment()));
 
   // Round
   ubv significand(input.getSignificand());
