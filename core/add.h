@@ -711,6 +711,64 @@ template <class t>
    return result;
  }
 
+
+ // True if and only if adding these would result in a catastrophic cancellation
+ // I.E. if the addition cancells out cancelAmount or more MSBs leaving only LSBs
+ template <class t>
+   typename t::prop isCatastrophicCancellation (const typename t::fpt &format,
+						const unpackedFloat<t> &left,
+						const unpackedFloat<t> &right,
+						const typename t::bwt &cancelAmount,
+						const typename t::prop &isAdd) {
+
+   typedef typename t::bwt bwt;
+   typedef typename t::prop prop;
+   typedef typename t::ubv ubv;
+   //typedef typename t::sbv sbv;
+
+   PRECONDITION(left.valid(format));
+   PRECONDITION(right.valid(format));
+   PRECONDITION(cancelAmount >= 2);   // cancel 0 is not meaningful
+                                      // cancel 1 is common on subtract and arguably not an error
+   PRECONDITION(cancelAmount <= format.significandWidth());  // can't cancel more than you have
+
+   // 1. It has to be an effective subtraction
+   // Duplication but easier to recompute than to pass
+   prop effectiveAdd((left.getSign() ^ right.getSign()) ^ isAdd);
+
+   // 2. It must be either normal or subnormal numbers
+   prop leftSpecial(left.getNaN() || left.getInf() || left.getZero());
+   prop rightSpecial(right.getNaN() || right.getInf() || right.getZero());
+
+   // 3.A. exponents are equal and so are the leading cancelAmount bits
+   // 3.B. exponent diff is one and the smaller one is 11111, larger one is 10000
+
+   // Optimisation : add a flag which assumes that left and right are in the correct order
+   prop knownInCorrectOrder(false);
+   exponentCompareInfo<t> ec(addExponentCompare<t>(left.getExponent().getWidth() + 1, left.getSignificand().getWidth(),
+						   left.getExponent(), right.getExponent(), knownInCorrectOrder));
+
+   // Can ignore the MSB of the significand as by invariants this is always 1
+   bwt significandWidth(format.significandWidth());
+   bwt topBit(significandWidth - 2);
+   bwt bottomBit(significandWidth - cancelAmount);
+
+   ubv leftExtract(left.getSignificand.extract(topBit, bottomBit));
+   ubv rightExtract(right.getSignificand.extract(topBit, bottomBit));
+
+   prop result(ITE(!effectiveAdd && !leftSpecial && !rightSpecial,
+		   ITE(ec.diffIsZero,
+		       leftExtract == rightExtract,
+		       ITE(ec.diffIsOne,
+			   ITE(ec.leftIsMax,
+			        leftExtract.isAllZeros() && rightExtract.isAllOnes(),
+			       rightExtract.isAllZeros() &&  leftExtract.isAllOnes()),
+			   false)),
+		   false));
+
+   return result;
+ }
+
 }
 
 #endif
