@@ -174,13 +174,17 @@ unpackedFloat<t> roundToIntegral (const typename t::fpt &format,
 template <class t>
   unpackedFloat<t> convertUBVToFloat (const typename t::fpt &targetFormat,
 				      const typename t::rm &roundingMode,
-				      const typename t::ubv &input,
+				      const typename t::ubv &preInput,
 				      const typename t::bwt &decimalPointPosition = 0) {
   
   typedef typename t::bwt bwt;
   typedef typename t::prop prop;
+  typedef typename t::ubv ubv;
   typedef typename t::sbv sbv;
   typedef typename t::fpt fpt;
+
+  // In the case of a 1 bit input(?) extend to 2 bits so that the intermediate float is a sensible format
+  ubv input((preInput.getWidth() == 1) ? preInput.extend(1) : preInput);
 
   bwt inputWidth(input.getWidth());
 
@@ -214,6 +218,7 @@ template <class t>
 
   bwt inputWidth(input.getWidth());
 
+  PRECONDITION(inputWidth > 1);   // A 1 bit signed-number is ???
   PRECONDITION(decimalPointPosition <= inputWidth);
   
   // Devise an appropriate format 
