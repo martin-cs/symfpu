@@ -161,6 +161,8 @@ namespace symfpu {
 
     static bwt exponentWidth(const fpt &format) {
 
+      // This calculation is a little more complex than you might think...
+
       // Note that there is one more exponent above 0 than there is
       // below.  This is the opposite of 2's compliment but this is not
       // a problem because the highest packed exponent corresponds to
@@ -169,17 +171,33 @@ namespace symfpu {
       // However we do need to increase it to allow subnormals (packed)
       // to be normalised.
 
-      bwt width = format.exponentWidth();
+      // The smallest exponent is:
+      //  -2^(format.exponentWidth() - 1) - 2  -  (format.significandWidth() - 1)
+      //
+      // We need an unpacked exponent width u such that
+      //  -2^(u-1) <= -2^(format.exponentWidth() - 1) - 2  -     (format.significandWidth() - 1)
+      //           i.e.
+      //   2^(u-1) >=  2^(format.exponentWidth() - 1)      +     (format.significandWidth() - 3)
 
-      // Could be improved to remove overflow concerns
-      uint64_t minimumExponent = ((1 << (width - 1)) - 2) + (format.significandWidth() - 1);
+      bwt formatExponentWidth = format.exponentWidth();
+      bwt formatSignificandWidth = format.significandWidth();
 
-      // Increase width until even the smallest subnormal can be normalised
-      while ((1UL << (width - 1)) < minimumExponent) {
-	++width;
+      if (formatSignificandWidth <= 3) {
+	// Subnormals fit into the gap between minimum normal exponent and what is represenatble
+	// using a signed number
+	return formatExponentWidth;
       }
 
-      return width;
+      bwt bitsNeededForSubnormals = bitsToRepresent(format.significandWidth() - 3);
+      if (bitsNeededForSubnormals < formatExponentWidth - 1) {
+	// Significand is short compared to exponent range,
+	// one extra bit should be sufficient
+	return formatExponentWidth + 1;
+
+      } else {
+	// Significand is long compared to exponent range
+	return bitsToRepresent((bwt(1) << (formatExponentWidth - 1)) + formatSignificandWidth - 3) + 1;
+      }
     }
 
     static bwt significandWidth(const fpt &format) {
