@@ -108,7 +108,7 @@ namespace symfpu {
     ubv packedSign(uf.getSign());
 
     // Exponent
-    bwt packedExWidth = format.packedExponentWidth();
+    bwt packedExWidth(format.packedExponentWidth());
 
     prop inNormalRange(uf.inNormalRange(format, prop(true)));
     INVARIANT(inNormalRange || uf.inSubnormalRange(format, prop(true)));     // Default values ensure this.
