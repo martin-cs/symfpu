@@ -433,7 +433,10 @@ namespace symfpu {
 		(subnormalAmount <= sbv(exWidth,sigWidth)));
 
       // Invariant implies this following steps do not loose data
-      ubv mask(orderEncode<t>(subnormalAmount.toUnsigned().matchWidth(significand)));
+      ubv mask(orderEncode<t>((sigWidth >= exWidth) ?
+			      subnormalAmount.toUnsigned().matchWidth(significand) :
+			      subnormalAmount.toUnsigned().extract(sigWidth - 1, 0)
+			      ));
 
       prop correctlyAbbreviated((mask & significand).isAllZeros());
 

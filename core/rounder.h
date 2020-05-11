@@ -387,7 +387,14 @@ template <class t>
   // Note that this is negative if normal, giving a full subnormal mask
   // but the result will be ignored (see the next invariant)
 
-  ubv subnormalShiftPrepared(subnormalAmount.toUnsigned().matchWidth(extractedSignificand));
+
+  // Care is needed if the exponents are longer than the significands
+  // In the case when data is lost it is negative and not used
+  bwt extractedSignificandWidth(extractedSignificand.getWidth());
+  ubv subnormalShiftPrepared((extractedSignificandWidth >= expWidth + 1) ?
+			     subnormalAmount.toUnsigned().matchWidth(extractedSignificand) :
+			     subnormalAmount.toUnsigned().extract(extractedSignificandWidth - 1, 0));
+
 
   // Compute masks
   ubv subnormalMask(orderEncode<t>(subnormalShiftPrepared)); // Invariant implies this if all ones, it will not be used
@@ -575,8 +582,11 @@ unpackedFloat<t> originalRounder (const typename t::fpt &format,
   prop aboveLimit(subnormalAmount >= sbv(expWidth, targetSignificandWidth));  // Will underflow
   sbv subnormalShift(ITE((belowLimit || aboveLimit), sbv::zero(expWidth), subnormalAmount));
   // Optimisation : collar
-  
-  ubv subnormalShiftPrepared(subnormalShift.toUnsigned().extend(targetSignificandWidth - expWidth));
+
+  bwt extractedSignificandWidth(extractedSignificand.getWidth());
+  ubv subnormalShiftPrepared((extractedSignificandWidth >= expWidth + 1) ?
+			     subnormalAmount.toUnsigned().extend(targetSignificandWidth - expWidth) :
+			     subnormalAmount.toUnsigned().extract(extractedSignificandWidth - 1, 0));
   ubv guardLocation(ubv::one(targetSignificandWidth) << subnormalShiftPrepared);
   ubv stickyMask(guardLocation.decrement());
 

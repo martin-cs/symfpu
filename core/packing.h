@@ -137,10 +137,18 @@ namespace symfpu {
     // Significand
     bwt packedSigWidth = format.packedSignificandWidth();
     ubv unpackedSignificand(uf.getSignificand());
+    bwt unpackedSignificandWidth = unpackedSignificand.getWidth();
 
-    INVARIANT(packedSigWidth == unpackedSignificand.getWidth() - 1);
+    INVARIANT(packedSigWidth == unpackedSignificandWidth - 1);
     ubv dropLeadingOne(unpackedSignificand.extract(packedSigWidth - 1,0));
-    ubv correctedSubnormal((unpackedSignificand >> (uf.getSubnormalAmount(format).toUnsigned().matchWidth(unpackedSignificand))).extract(packedSigWidth - 1,0));
+
+    ubv subnormalShiftAmount(uf.getSubnormalAmount(format).toUnsigned());
+    ubv shiftAmount((subnormalShiftAmount.getWidth() <= unpackedSignificandWidth) ?
+		    subnormalShiftAmount.matchWidth(unpackedSignificand) :
+		    subnormalShiftAmount.extract(unpackedSignificandWidth - 1, 0));
+    // The extraction could loose data if exponent is much larger than the significand
+    // However getSubnormalAmount is between 0 and packedSigWidth so it should be safe
+    ubv correctedSubnormal((unpackedSignificand >> shiftAmount).extract(packedSigWidth - 1,0));
 
     prop hasFixedSignificand(uf.getNaN() || uf.getInf() || uf.getZero());
     

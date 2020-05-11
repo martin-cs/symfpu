@@ -100,14 +100,20 @@ unpackedFloat<t> roundToIntegral (const typename t::fpt &format,
   
   // Otherwise, compute rounding location
   sbv initialRoundingPoint(expandingSubtract<t>(packedSigWidth,exponent));  // Expansion only needed in obscure formats
-  sbv roundingPoint(collar<t>(initialRoundingPoint,
-			      sbv::zero(exponentWidth + 1),
-			      unpackedSigWidth.extend(1).increment()));
+  sbv collaredRoundingPoint(collar<t>(initialRoundingPoint,
+				      sbv::zero(exponentWidth + 1),
+				      unpackedSigWidth.extend(1).increment()));
 
   // Round
   ubv significand(input.getSignificand());
+  bwt significandWidth(significand.getWidth());
+  ubv roundingPoint((significandWidth >= exponentWidth) ?
+		    collaredRoundingPoint.toUnsigned().matchWidth(significand) :
+		    collaredRoundingPoint.toUnsigned().extract(significandWidth - 1, 0));
+  // Extract is safe because of the collar
+
   significandRounderResult<t> roundedResult(variablePositionRound<t>(roundingMode, input.getSign(), significand,
-								     roundingPoint.toUnsigned().matchWidth(significand),
+								     roundingPoint,
 								     prop(false), // TODO : Could actually be exponent >= 0
 								     isID));      // The fast-path case so just deactives some code
 
