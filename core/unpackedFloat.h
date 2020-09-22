@@ -103,6 +103,30 @@ namespace symfpu {
       sign(s), exponent(exp), significand(signif)
       {}
 
+    // An intermediate point in some operations is producing a value in an extended
+    // format (for example, multiply produces an intermediate value with one extra exponent
+    // bit and double the number of significand bits).
+    //
+    // In principle this is simple, you can compute the new format
+    // directly from the old one.
+    //
+    // However in converting the packed significant length to the
+    // unpacked one a number of bits are added.  The number of bits
+    // added is dependent on the format but is not necessarily linear.
+    // For example, if e is small and p is large, the unpacking may
+    // add 2 to e.  If you do an expanding add you will wind up with
+    // something that is width e+3.  However the format that has e+1
+    // exponent bits may only add 1 bit in unpacking so the expected
+    // length is e+2.  This can happen the other way around as well.
+    // As such some care is needed to make sure that what is
+    // constructed actually has the right widths.
+    //
+    // Be careful with this operation as it can loose data.
+    unpackedFloat (const fpt &fmt, const prop &s, const sbv &exp, const ubv &signif) :
+      nan(false), inf(false), zero(false),
+      sign(s), exponent(exp.resize(defaultExponent(fmt))), significand(signif)
+      {}
+
     unpackedFloat (const unpackedFloat<t> &old) :
       nan(old.nan), inf(old.inf), zero(old.zero),
       sign(old.sign), exponent(old.exponent), significand(old.significand)
