@@ -111,7 +111,8 @@ template <class t>
   ubv finishedSignificand(alignedSignificand | ubv(divided.remainderBit).extend(resWidth - 1));
   
   // Put back together
-  unpackedFloat<t> divideResult(divideSign, alignedExponent.extend(1), finishedSignificand);
+  fpt extendedFormat(format.exponentWidth() + 1, format.significandWidth() + 2);
+  unpackedFloat<t> divideResult(extendedFormat, divideSign, alignedExponent, finishedSignificand);
 
   // A brief word about formats.
   // You might think that the extend above is unnecessary : it is from a overflow point of view.
@@ -121,7 +122,6 @@ template <class t>
   // can have an exponent greater than very large normal * 2 ( + 1)
   // because the exponent range is asymmetric with more subnormal than normal.
   
-  fpt extendedFormat(format.exponentWidth() + 2, format.significandWidth() + 2);
   POSTCONDITION(divideResult.valid(extendedFormat));
 
   return divideResult;

@@ -30,6 +30,24 @@
 
 namespace symfpu {
 
+  /*** Size matching ***/
+  template <class t, class bv>
+  std::pair<bv, bv> sameWidth(const bv &op1, const bv &op2) {
+    typename t::bwt w1(op1.getWidth());
+    typename t::bwt w2(op2.getWidth());
+
+    if (w1 == w2) {
+      return std::make_pair(op1, op2);
+    } else if (w1 < w2) {
+      return std::make_pair(op1.matchWidth(op2), op2);
+    } else {
+      INVARIANT(w1 > w2);
+      return std::make_pair(op1.matchWidth(op2), op2);
+    }
+  }
+
+
+
   /*** Expanding operations ***/
   template <class t, class bv>
   bv expandingAdd (const bv &op1, const bv &op2) {

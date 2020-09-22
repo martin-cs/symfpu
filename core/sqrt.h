@@ -97,12 +97,11 @@ template <class t>
 
   ubv finishedSignificand(sqrtd.result.append(ubv(sqrtd.remainderBit)));
 
-  unpackedFloat<t> sqrtResult(sqrtSign, exponentHalved, finishedSignificand);
-
-  
   fpt extendedFormat(format.exponentWidth(), format.significandWidth() + 2);
   // format.exponentWidth() - 1 should also be true but requires shrinking the exponent and
   // then increasing it in the rounder
+  unpackedFloat<t> sqrtResult(extendedFormat, sqrtSign, exponentHalved, finishedSignificand);
+
   POSTCONDITION(sqrtResult.valid(extendedFormat));
 
   return sqrtResult;

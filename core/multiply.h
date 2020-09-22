@@ -103,10 +103,9 @@ template <class t>
 
   
   // Put back together
-  unpackedFloat<t> multiplyResult(multiplySign, alignedExponent, alignedSignificand);
-
-  
   fpt extendedFormat(format.exponentWidth() + 1, format.significandWidth() * 2);
+  unpackedFloat<t> multiplyResult(extendedFormat, multiplySign, alignedExponent, alignedSignificand);
+
   POSTCONDITION(multiplyResult.valid(extendedFormat));
 
   return multiplyResult;

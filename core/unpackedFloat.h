@@ -108,6 +108,17 @@ namespace symfpu {
       sign(s), exponent(exp), significand(signif)
       {}
 
+    // An intermediate point in some operations is producing a value in an extended
+    // format (for example, multiply produces an intermediate value with one extra exponent
+    // bit and double the number of significand bits).  However the unpacked size of the
+    // significand is larger than the bits given by the format.  This constructor does
+    // the appropriate extension so that what is constructed is a valid unpacked float
+    // in the given format.
+    unpackedFloat (const fpt &fmt, const prop &s, const sbv &exp, const ubv &signif) :
+      nan(false), inf(false), zero(false),
+      sign(s), exponent(exp.matchWidth(defaultExponent(fmt))), significand(signif)
+      {}
+
     unpackedFloat (const unpackedFloat<t> &old) :
       nan(old.nan), inf(old.inf), zero(old.zero),
       sign(old.sign), exponent(old.exponent), significand(old.significand)

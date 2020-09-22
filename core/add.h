@@ -402,15 +402,14 @@ template <class t>
 		     ubv::zero(alignedSum.getWidth()),
 		     (shiftedStickyBit | ITE(!overflow, ubv::zero(1), sum.extract(0,0)).extend(alignedSum.getWidth() - 1))));
    
-   
-   // Put it back together
-   unpackedFloat<t> sumResult(resultSign, correctedExponent, (alignedSum | stickyBit).contract(1));
-
    // We return something in an extended format
    //  *. One extra exponent bit to deal with the 'overflow' case
    //  *. Two extra significand bits for the guard and sticky bits
    fpt extendedFormat(format.exponentWidth() + 1, format.significandWidth() + 2);
    
+   // Put it back together
+   unpackedFloat<t> sumResult(extendedFormat, resultSign, correctedExponent, (alignedSum | stickyBit).contract(1));
+
    // Deal with the major cancellation case
    // It would be nice to use normaliseUpDetectZero but the sign
    // of the zero depends on the rounding mode.
@@ -530,7 +529,7 @@ template <class t>
 				 extendedLargerExponent.decrement())));
 
    // Far path : Construct result
-   unpackedFloat<t> farPathResult(resultSign, correctedExponent, (alignedSum | shiftedStickyBit).contract(1));
+   unpackedFloat<t> farPathResult(extendedFormat, resultSign, correctedExponent, (alignedSum | shiftedStickyBit).contract(1));
 
 
 
@@ -548,13 +547,14 @@ template <class t>
    prop nearNoCancel(nearSum.extract(sumWidth - 2, sumWidth - 2).isAllOnes());
 
    ubv choppedNearSum(nearSum.extract(sumWidth - 3,1)); // In the case this is used, cut bits are all 0 
-   unpackedFloat<t> cancellation(resultSign, 
+   unpackedFloat<t> cancellation(extendedFormat,
+				 resultSign,
 				 larger.getExponent().decrement(),
 				 choppedNearSum);
 
 
    // Near path : Construct result
-   unpackedFloat<t> nearPathResult(resultSign, extendedLargerExponent, nearSum.contract(1));
+   unpackedFloat<t> nearPathResult(extendedFormat, resultSign, extendedLargerExponent, nearSum.contract(1));
 
 
 
