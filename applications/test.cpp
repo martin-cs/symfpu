@@ -1051,7 +1051,7 @@ void ternaryRoundedFunctionPrintC (const int /*verbose*/, const uint64_t start, 
     fprintf(out,";\n");
 
     fprintf(out, "float h = ");
-    printFloatC(out, g);
+    printFloatC(out, h);
     fprintf(out,";\n");
 
     fprintf(out, "float ref = ");
@@ -1100,7 +1100,7 @@ void ternaryRoundedFunctionPrintSMT (const int /*verbose*/, const uint64_t start
     fprintf(out, ")\n");
 
     fprintf(out, "(define-fun h () Float32 ");
-    printFloatSMT(out, input2);
+    printFloatSMT(out, input3);
     fprintf(out, ")\n");
 
     fprintf(out, "(define-fun ref () Float32 ");
