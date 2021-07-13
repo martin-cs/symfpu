@@ -25,7 +25,7 @@
 
 /*** Test Vector Generation ***/
 
-#define NUMBER_OF_FLOAT_TESTS 124
+#define NUMBER_OF_FLOAT_TESTS 126
 static float floatTestValue [NUMBER_OF_FLOAT_TESTS] = {
   0x0p+0f, -0x0p+0f,                        // Zeros
   0x1p+0f, -0x1p+0f,                        // Ones
@@ -111,7 +111,9 @@ static float floatTestValue [NUMBER_OF_FLOAT_TESTS] = {
    0x1.fffffep+125f,           // Hunt a specific bug
    0x1.fffffep+126f,
    0x1.8p+1f,
-   0x1.000004p+125f
+   0x1.000004p+125f,
+   0x1.a8cp-138f,
+  -0x1.018c8p+120f
 };
 
 float getTestValue (uint64_t index) {
