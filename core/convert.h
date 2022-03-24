@@ -483,17 +483,23 @@ template <class t>
 
    // Put the result together
    bwt roundSigWidth(rounded.significand.getWidth());
+   prop msbSet(rounded.significand.extract(roundSigWidth - 1,
+                                           roundSigWidth - 1).isAllOnes());
+   // -2^{n-1} is the only safe "overflow" case
+   prop safeOverflow(input.getSign() &&
+                     msbSet &&
+                     rounded.significand.extract(roundSigWidth - 2,
+                                                 0).isAllZeros());
    prop undefinedResult(earlyUndefinedResult ||
-			rounded.incrementExponent ||    // Definite Overflow
-			(rounded.significand.extract(roundSigWidth - 1,
-						     roundSigWidth - 1).isAllOnes() &&
-			 !(input.getSign() && rounded.significand.extract(roundSigWidth - 2, 0).isAllZeros()))); // -2^{n-1} is the only safe "overflow" case
+                        rounded.incrementExponent ||    // Definite Overflow
+                        (msbSet && !safeOverflow));
 
-   
-   sbv result(ITE(undefinedResult,
-		  undefValue,
-		  conditionalNegate<t,sbv,prop>(input.getSign(), rounded.significand.toSigned())));
-
+   sbv definedResult(
+      ITE(safeOverflow,
+          rounded.significand.toSigned(),
+          conditionalNegate<t,sbv,prop>(input.getSign(),
+                                        rounded.significand.toSigned())));
+   sbv result(ITE(undefinedResult, undefValue, definedResult));
    return result;
  }
 
