@@ -134,8 +134,12 @@ namespace symfpu {
   bv conditionalNegate (const prop &p, const bv &b) {
     typename t::bwt w(b.getWidth());
     PRECONDITION(w >= 2);
-    PRECONDITION(IMPLIES(p, !(b.extract(w - 1, w - 1).isAllOnes() &&
-			      b.extract(w - 2,     0).isAllZeros())));
+    // We may be tempted to check that we are not trying to negate the smallest
+    // value that can be represented using two's complement (i.e., `100...0`).
+    // This is problematic, however, in cases where we apply
+    // `conditionalNegate()` conditionally (e.g., in `convertFloatToSBV()`),
+    // because the arguments to the branches are evaluated eagerly, so the
+    // assertion fails, even though the result is not used.
     
     return bv(ITE(p, -b, b));
   }
