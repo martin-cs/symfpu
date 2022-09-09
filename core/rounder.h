@@ -223,8 +223,13 @@ namespace symfpu {
     ubv roundedSignificand(conditionalIncrement<t>(roundUp, extractedSignificand));
 
     ubv overflowBit(roundedSignificand.extract(targetWidth, targetWidth) & ubv(roundUp));
-    ubv carryUpMask((overflowBit | ubv(knownLeadingOne)).append(ubv::zero(targetWidth - 1)));   // Cheaper than conditional shift
-    
+    // Cheaper than conditional shift
+    ubv carryUpMask(overflowBit | ubv(knownLeadingOne));
+    if (targetWidth > 1)
+    {
+      carryUpMask = carryUpMask.append(ubv::zero(targetWidth - 1));
+    }
+
     // Build result
     significandRounderResult<t> result(roundedSignificand.extract(targetWidth-1,0) | carryUpMask,
 				    overflowBit.isAllOnes());
