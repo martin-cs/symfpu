@@ -30,3 +30,12 @@
 *.exe
 *.out
 *.app
+
+# Editor backups
+*~
+
+# Non-version controlled space for notes
+attic/*
+
+# Things built by Make
+test
