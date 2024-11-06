@@ -1,26 +1,43 @@
 SymFPU : The Symbolic Floating Point Unit
 =========================================
 
-SymFPU is an implementation of the SMT-LIB / IEEE-754 operations in
-terms of bit-vector operations.  It is templated in terms of the
-bit-vectors, propositions, floating-point formats and rounding mode
-types used.  This allow the same code to be executed as an arbitrary
-precision "SoftFloat" library (although it's performance would not be
-good) or to be used to build symbolic representation of floating-point
-operations suitable for use in "bit-blasting" SMT solvers (you could
-also generate circuits from them but again, performance will likely
-not be good).
+SymFPU is an implementation of the SMT-LIB theory of (IEEE-754)
+floating-point in terms of bit-vector operations.  It is templated in
+terms of the bit-vectors, propositions, floating-point formats and
+rounding mode types used.  By providing different implementations of
+these templates it is possible to:
+
+- Run SymFPU as an arbitrary precision software floating-point
+  library.  This is done for testing and consistent constant
+  evaluation in some tools.  Note that it will not perform as well as
+  a dedicated software floating-point library such as SoftFloat or
+  MPFR.
+
+- Run SymFPU "symbolically" to generate a representation of the
+  bit-vector operations used in the floating-point operations.  By
+  providing different implementations of the templates it is possible
+  to produce the "symbolic" output in a variety of different formats.
+  This is normally used for "bit-blasting" in SMT solvers.
+  Alternatively you could use it to generate code in SMT-LIB, C or
+  even Verilog if you wanted (SymFPU is not designed to produce good
+  hardware so YMMV).
 
 A considerable amount of effort has gone in to checking that these
 encodings are correct and so please do report any discrepancies you
 see.
 
-The library is Free Software licensed under the GPL V3.  If this poses
-a particular challenge for your application, please contact the author.
+The library is available under your choice of two licenses:
+- The Free Software Foundations' GPL V3.
+- The "3 clause" BSD license.
+If this poses particular challenge for your application, please
+contact the authors.
+
 
 
 A Quick Start
 -------------
+
+To integrate SymFPU with your system, you will need to:
 
 1. Create a "back-end", a class with the following members:
 
