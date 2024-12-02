@@ -85,13 +85,11 @@ namespace symfpu {
     // if it is also a valid normal number then it will make proving
     // invariants easier.  In this case it is the value 1.0.
 
-    static sbv defaultExponent(const fpt &fmt) {
-      return sbv::zero(unpackedFloat<t>::exponentWidth(fmt));
+    static sbv defaultExponent(bwt exponentWidth) {
+      return sbv::zero(exponentWidth);
     }
 
-    static ubv defaultSignificand(const fpt &fmt) {
-      bwt significandWidth = unpackedFloat<t>::significandWidth(fmt);
-
+    static ubv defaultSignificand(bwt significandWidth) {
       return ubv::one(significandWidth) << ubv(significandWidth, (significandWidth - 1));
     }
 
@@ -125,15 +123,15 @@ namespace symfpu {
       
 
     static unpackedFloat<t> makeZero(const fpt &fmt, const prop &s) {
-      return unpackedFloat<t>(FPCLASS_ZERO, s, defaultExponent(fmt), defaultSignificand(fmt));
+      return unpackedFloat<t>(FPCLASS_ZERO, s, defaultExponent(unpackedFloat<t>::exponentWidth(fmt)), defaultSignificand(unpackedFloat<t>::significandWidth(fmt)));
     }
 
     static unpackedFloat<t> makeInf(const fpt &fmt, const prop &s) {
-      return unpackedFloat<t>(FPCLASS_INF, s, defaultExponent(fmt), defaultSignificand(fmt));
+      return unpackedFloat<t>(FPCLASS_INF, s, defaultExponent(unpackedFloat<t>::exponentWidth(fmt)), defaultSignificand(unpackedFloat<t>::significandWidth(fmt)));
     }
 
     static unpackedFloat<t> makeNaN(const fpt &fmt) {
-      return unpackedFloat<t>(FPCLASS_NAN, false, defaultExponent(fmt), defaultSignificand(fmt));
+      return unpackedFloat<t>(FPCLASS_NAN, false, defaultExponent(unpackedFloat<t>::exponentWidth(fmt)), defaultSignificand(unpackedFloat<t>::significandWidth(fmt)));
     }
 
     inline const prop & getNaN(void) const { return this->nan; }
@@ -389,7 +387,48 @@ namespace symfpu {
     }
 #endif
 
-    
+    // At several points we construct unpacked floats which are
+    // structurally well-formed but it is difficult to say what format
+    // they are in.  We know that they can be represented with the
+    // given bit-vectors and in many cases we know a range of possible
+    // exponents.  For example, after arithmetic operations such as
+    // divide, we know the bit-width of the exponent but the maximum
+    // value can be 2*max normal + significand width - 1 which doesn't
+    // neatly fit in an obvious format.  This is the condition for an
+    // unpacked float to be well-formed.  It is used in testing
+    // whether they are valid with respect to a given format but is a
+    // lighter weight check.
+    prop wellFormed(const sbv &exponentLowerBound, const sbv &exponentUpperBound) const {
+      PRECONDITION(exponentLowerBound.getWidth() == exponent.getWidth());
+      PRECONDITION(exponentUpperBound.getWidth() == exponent.getWidth());
+
+      // At most one flag is true
+      prop atMostOneFlag(!(nan && inf) && !(nan && zero) && !(inf && zero));
+
+      // If one flag is true then exponent and significand are defaults
+      prop oneFlag(nan || inf || zero);
+      prop exponentIsDefault(defaultExponent(exponent.getWidth()) == exponent);
+      prop significandIsDefault(defaultSignificand(significand.getWidth()) == significand);
+      prop flagImpliesDefaultExponent(IMPLIES(oneFlag, exponentIsDefault));
+      prop flagImpliesDefaultSignificand(IMPLIES(oneFlag, significandIsDefault));
+
+      // NaN has sign = 0
+      prop NaNImpliesSignFalse(IMPLIES(nan, !sign));
+
+      // Exponent is in range
+      prop exponentInRange((exponentLowerBound <= exponent) &&
+			   (exponent <= exponentUpperBound));
+
+      // Has a leading one
+      prop hasLeadingOne(!(leadingOne(significand.getWidth()) & significand).isAllZeros());
+
+      return (atMostOneFlag &&
+	      (flagImpliesDefaultExponent && flagImpliesDefaultSignificand) &&
+	      NaNImpliesSignFalse &&
+	      exponentInRange &&
+	      hasLeadingOne);
+    }
+
 
     // Is a well formed unpacked struct of the given format?
     // The format is needed to ensure that subnormals are correct.
@@ -402,24 +441,11 @@ namespace symfpu {
       PRECONDITION((exWidth == exponent.getWidth()) &&
 		   (sigWidth == significand.getWidth()));
 
-      // At most one flag is true
-      prop atMostOneFlag(!(nan && inf) && !(nan && zero) && !(inf && zero));
+      // Start by checking it is well formed
+      prop isWellFormed(wellFormed(minSubnormalExponent(format),
+				   maxNormalExponent(format)));
 
-      // If one flag is true then exponent and significand are defaults
-      prop oneFlag(nan || inf || zero);
-      prop exponentIsDefault(defaultExponent(format) == exponent);
-      prop significandIsDefault(defaultSignificand(format) == significand);
-      prop flagImpliesDefaultExponent(IMPLIES(oneFlag, exponentIsDefault));
-      prop flagImpliesDefaultSignificand(IMPLIES(oneFlag, significandIsDefault));
-
-      // NaN has sign = 0
-      prop NaNImpliesSignFalse(IMPLIES(nan, !sign));
-
-      // Exponent is in range
-      prop exponentInRange(inNormalOrSubnormalRange(format, prop(false)));
-
-      // Has a leading one
-      prop hasLeadingOne(!(leadingOne(unpackedFloat<t>::significandWidth(format)) & significand).isAllZeros());
+      // Add format-specific checks...
 
       // Subnormal numbers require an additional check to make sure they
       // do not have an unrepresentable amount of significand bits.
@@ -437,13 +463,7 @@ namespace symfpu {
 
       prop subnormalImpliesTrailingZeros(IMPLIES(inSubnormalRange(format, prop(false)), correctlyAbbreviated));
 
-      
-      return (atMostOneFlag &&
-	      (flagImpliesDefaultExponent && flagImpliesDefaultSignificand) &&
-	      NaNImpliesSignFalse &&
-	      exponentInRange &&
-	      hasLeadingOne &&
-	      subnormalImpliesTrailingZeros);
+      return isWellFormed && subnormalImpliesTrailingZeros;
     }
 
       
@@ -483,8 +503,8 @@ namespace symfpu {
 
 
     
-      prop exponentIsDefault(defaultExponent(format) == exponent);
-      prop significandIsDefault(defaultSignificand(format) == significand);
+      prop exponentIsDefault(defaultExponent(unpackedFloat<t>::exponentWidth(fmt)) == exponent);
+      prop significandIsDefault(defaultSignificand(unpackedFloat<t>::significandWidth(fmt)) == significand);
 
       prop NaNCase ( nan && !inf && !zero && exponentIsDefault && significandIsDefault && !sign);
       prop InfCase (!nan &&  inf && !zero && exponentIsDefault && significandIsDefault);
