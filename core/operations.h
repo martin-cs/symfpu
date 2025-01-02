@@ -37,7 +37,7 @@ namespace symfpu {
   }
 
   template <class t, class bv, class prop>
-    bv expandingAddWithCarryIn (const bv &op1, const bv &op2, const prop &cin) {
+  bv expandingAddWithCarryIn (const bv &op1, const bv &op2, const prop &cin) {
     PRECONDITION(op1.getWidth() == op2.getWidth());
 
     bv x(op1.extend(1));
@@ -49,7 +49,7 @@ namespace symfpu {
     bv carry(ITE(cin, bv::one(w), bv::zero(w)));
     bv res(sum.modularAdd(carry)); // Modular is safe due to the extension
                                    // (2^n - 1) + (2^n - 1) + 1 == 2^(n+1) - 1
-                                   // -(2^n) + -(2^n) + 1 > 2^(n+1)
+                                   // -(2^n) + -(2^n) + 1 > -2^(n+1)
     return res;
   }
 

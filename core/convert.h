@@ -241,7 +241,7 @@ template <class t>
  }
 
 
- // Common conversion code for both convert to sgined and to unsigned.
+ // Common conversion code for both convert to signed and to unsigned.
  // Note that the results will be junk if it is not in bounds, etc.
  // convertFloatToUBV and convertFloatToSBV handle all of that logic.
  template <class t>
