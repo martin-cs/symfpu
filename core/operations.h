@@ -63,6 +63,23 @@ namespace symfpu {
     return x - y;
   }
 
+  template <class t, class bv, class prop>
+  bv expandingSubtractWithBorrowIn (const bv &op1, const bv &op2, const prop &bin) {
+    PRECONDITION(op1.getWidth() == op2.getWidth());
+
+    bv x(op1.extend(1));
+    bv y(op2.extend(1));
+
+    bv sum(x - y);
+
+    typename t::bwt w(sum.getWidth());
+    bv borrow(ITE(bin, bv::one(w), bv::zero(w)));
+    bv res(sum.modularSubtract(borrow)); // Modular is safe due to the extension
+                                   // (2^n - 1) - -(2^n) - 1 < 2^(n+1) - 1
+                                   // -(2^n) - (2^n - 1) - 1 == -2^(n+1)
+    return res;
+  }
+
   template <class t, class bv>
   bv expandingMultiply (const bv &op1, const bv &op2) {
     typename t::bwt width = op1.getWidth();
