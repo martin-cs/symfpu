@@ -270,6 +270,12 @@ namespace symfpu {
 							    this->value + op.value));
       }
 
+      inline bitVector<T> modularSubtract (const bitVector<T> &op) const {
+	return bitVector<T>(this->width,
+			    bitVector<T>::makeRepresentable(this->width,
+							    this->value - op.value));
+      }
+
       bitVector<T> modularNegate () const;
 
 
