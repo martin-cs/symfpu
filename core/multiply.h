@@ -55,7 +55,6 @@ template <class t>
   typedef typename t::prop prop;
   typedef typename t::ubv ubv;
   typedef typename t::sbv sbv;
-  typedef typename t::fpt fpt;
 
   PRECONDITION(left.valid(format));
   PRECONDITION(right.valid(format));
@@ -83,26 +82,21 @@ template <class t>
   ubv alignedSignificand(conditionalLeftShiftOne<t>(!topBitSet, significandProduct)); // Will not loose information
 
   // Add up exponents
-  #if 0
-  sbv exponentSum(expandingAdd<t>(left.getExponent(),right.getExponent()));
-  sbv min(unpackedFloat<t>::minSubnormalExponent(format));
-  sbv max(unpackedFloat<t>::maxNormalExponent(format));
-  INVARIANT(expandingAdd<t>(min,min) <= exponentSum);
-  INVARIANT(exponentSum <= expandingAdd<t>(max, max));
   // Optimisation : use the if-then-lazy-else to avoid multiplying for underflow and overflow
   //                subnormal * subnormal does not need to be evaluated
   //                may be best done in the rounder along with underflow
-  #endif
-  
   sbv alignedExponent(expandingAddWithCarryIn<t>(left.getExponent(),right.getExponent(), topBitSet));
 
-  
   // Put back together
   unpackedFloat<t> multiplyResult(multiplySign, alignedExponent, alignedSignificand);
 
-  
-  fpt extendedFormat(format.exponentWidth() + 1, format.significandWidth() * 2);
-  POSTCONDITION(multiplyResult.valid(extendedFormat));
+  // Format specific constants
+  sbv min(unpackedFloat<t>::minSubnormalExponent(format));
+  sbv max(unpackedFloat<t>::maxNormalExponent(format));
+  sbv multiplyResultExponentUpperBound(expandingAddWithCarryIn<t>(max, max, true));  // + 1 for renormalisation of the top bit
+  sbv multiplyResultExponentLowerBound(expandingAddWithCarryIn<t>(min, min, false));
+
+  POSTCONDITION(multiplyResult.wellFormed(multiplyResultExponentLowerBound, multiplyResultExponentUpperBound));
 
   return multiplyResult;
  }
