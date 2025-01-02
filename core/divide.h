@@ -58,25 +58,13 @@ template <class t>
   typedef typename t::prop prop;
   typedef typename t::ubv ubv;
   typedef typename t::sbv sbv;
-  typedef typename t::fpt fpt;
+  //typedef typename t::fpt fpt;
 
   PRECONDITION(left.valid(format));
   PRECONDITION(right.valid(format));
 
   // Compute sign
   prop divideSign(left.getSign() ^ right.getSign());
-
-  // Subtract up exponents
-  sbv exponentDiff(expandingSubtract<t>(left.getExponent(),right.getExponent()));
-  // Optimisation : do this late and use the increment as a carry in
-
-  sbv min(unpackedFloat<t>::minSubnormalExponent(format));
-  sbv max(unpackedFloat<t>::maxNormalExponent(format));
-  INVARIANT(expandingSubtract<t>(min,max) <= exponentDiff);
-  INVARIANT(exponentDiff <= expandingSubtract<t>(max, min));
-  // Optimisation : use the if-then-lazy-else to avoid dividing for underflow and overflow
-  //                subnormal / greater-than-2^sigwidth does not need to be evaluated
-
 
   // Divide the significands
   // We need significandWidth() + 1 bits in the result but the top one may cancel, so add two bits
@@ -97,28 +85,34 @@ template <class t>
   INVARIANT(topBitSet || nextBit.isAllOnes());
   INVARIANT(topBitSet == (left.getSignificand() >= right.getSignificand()));
   
-
   // Re-align
-  sbv alignedExponent(conditionalDecrement<t>(!topBitSet, exponentDiff)); // Will not overflow as previously expanded
   ubv alignedSignificand(conditionalLeftShiftOne<t>(!topBitSet, divided.result)); // Will not loose information
+
+  // Subtract up exponents
+  // Optimisation : use the if-then-lazy-else to avoid dividing for underflow and overflow
+  //                subnormal / greater-than-2^sigwidth does not need to be evaluated
+  sbv alignedExponent(expandingSubtractWithBorrowIn<t>(left.getExponent(),right.getExponent(), !topBitSet));
 
   // Create the sticky bit, it is important that this is after alignment
   ubv finishedSignificand(alignedSignificand | ubv(divided.remainderBit).extend(resWidth - 1));
   
   // Put back together
-  unpackedFloat<t> divideResult(divideSign, alignedExponent.extend(1), finishedSignificand);
+  unpackedFloat<t> divideResult(divideSign, alignedExponent, finishedSignificand);
+
+  sbv min(unpackedFloat<t>::minSubnormalExponent(format));
+  sbv max(unpackedFloat<t>::maxNormalExponent(format));
+  sbv divideResultExponentUpperBound(expandingSubtractWithBorrowIn<t>(max, min, false));
+  sbv divideResultExponentLowerBound(expandingSubtractWithBorrowIn<t>(min, max, true));  // -1 for renormalisation of the top bit
+
+  POSTCONDITION(divideResult.wellFormed(divideResultExponentLowerBound, divideResultExponentUpperBound));
 
   // A brief word about formats.
-  // You might think that the extend above is unnecessary : it is from a overflow point of view.
-  // It's needed so that it is a valid number with exponentWidth() + 2.
+  // Most operations adding one bit to the exponent format is enough to represent the result.
   // +1 is sufficient in almost all cases.  However:
   //    very large normal / very small subnormal
   // can have an exponent greater than very large normal * 2 ( + 1)
   // because the exponent range is asymmetric with more subnormal than normal.
   
-  fpt extendedFormat(format.exponentWidth() + 2, format.significandWidth() + 2);
-  POSTCONDITION(divideResult.valid(extendedFormat));
-
   return divideResult;
  }
 
