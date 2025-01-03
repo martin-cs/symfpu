@@ -412,7 +412,7 @@ template <class t>
    unpackedFloat<t> additionResult(ITE(fullCancel,
 				       unpackedFloat<t>::makeZero(sumResult.getExponent().getWidth(), sumResult.getSignificand().getWidth(), roundingMode == t::RTN()),
 				       ITE(majorCancel,
-					   sumResult.normaliseUp(extendedFormat),
+					   sumResult.normaliseUp(),
 					   sumResult)));
    
    // Some thought is required here to convince yourself that 
@@ -566,7 +566,7 @@ template <class t>
 					   unpackedFloat<t>::makeZero(nearPathResult.getExponent().getWidth(), nearPathResult.getSignificand().getWidth(), roundingMode == t::RTN()),
 					   ITE(nearNoCancel,
 					       nearPathResult,
-					       cancellation.normaliseUp(format).extend(1,2)))));
+					       cancellation.normaliseUp().extend(1,2)))));
    
    // Some thought is required here to convince yourself that 
    // there will be no subnormal values that violate this.

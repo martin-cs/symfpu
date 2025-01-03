@@ -82,7 +82,7 @@ namespace symfpu {
 				    unpackedFloat<t>::makeZero(format, sign),
 				    ITE(!isSubnormal,
 					ufNormal,
-					ufSubnormalBase.normaliseUp(format) )))));
+					ufSubnormalBase.normaliseUp() )))));
 
     POSTCONDITION(uf.valid(format));
 
