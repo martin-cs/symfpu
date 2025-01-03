@@ -410,7 +410,7 @@ template <class t>
    // It would be nice to use normaliseUpDetectZero but the sign
    // of the zero depends on the rounding mode.
    unpackedFloat<t> additionResult(ITE(fullCancel,
-				       unpackedFloat<t>::makeZero(extendedFormat, roundingMode == t::RTN()),
+				       unpackedFloat<t>::makeZero(sumResult.getExponent().getWidth(), sumResult.getSignificand().getWidth(), roundingMode == t::RTN()),
 				       ITE(majorCancel,
 					   sumResult.normaliseUp(extendedFormat),
 					   sumResult)));
@@ -563,7 +563,7 @@ template <class t>
 					       farPathResult), */
 				       farPathResult,
 				       ITE(fullCancel,
-					   unpackedFloat<t>::makeZero(extendedFormat, roundingMode == t::RTN()),
+					   unpackedFloat<t>::makeZero(nearPathResult.getExponent().getWidth(), nearPathResult.getSignificand().getWidth(), roundingMode == t::RTN()),
 					   ITE(nearNoCancel,
 					       nearPathResult,
 					       cancellation.normaliseUp(format).extend(1,2)))));
