@@ -122,6 +122,13 @@ namespace symfpu {
       {}
       
 
+    // During some arithmetic operations we may need to make a zero
+    // but not have an appropriate format to hand.
+    // Instead we pass the width of the desired exponent and significand.
+    static unpackedFloat<t> makeZero(bwt ep, bwt sp, const prop &s) {
+      return unpackedFloat<t>(FPCLASS_ZERO, s, defaultExponent(ep), defaultSignificand(sp));
+    }
+
     static unpackedFloat<t> makeZero(const fpt &fmt, const prop &s) {
       return unpackedFloat<t>(FPCLASS_ZERO, s, defaultExponent(unpackedFloat<t>::exponentWidth(fmt)), defaultSignificand(unpackedFloat<t>::significandWidth(fmt)));
     }
