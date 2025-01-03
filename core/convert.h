@@ -200,7 +200,7 @@ template <class t>
   unpackedFloat<t> initial(prop(false), sbv(actualExponentWidth, (inputWidth - 1) - decimalPointPosition), input);  // inputWidth - 1 as we want one bit above the decimal point
   
   // Normalise
-  unpackedFloat<t> normalised(initial.normaliseUpDetectZero(initialFormat));
+  unpackedFloat<t> normalised(initial.normaliseUpDetectZero());
 
   // Round (the conversion will catch the cases where no rounding is needed)
   return convertFloatToFloat(initialFormat, targetFormat, roundingMode, normalised);
@@ -234,7 +234,7 @@ template <class t>
   unpackedFloat<t> initial(negative, sbv(actualExponentWidth, inputWidth - decimalPointPosition), (abs<t,sbv>(input.extend(1))).toUnsigned());
   
   // Normalise
-  unpackedFloat<t> normalised(initial.normaliseUpDetectZero(initialFormat));
+  unpackedFloat<t> normalised(initial.normaliseUpDetectZero());
 
   // Round (the conversion will catch the cases where no rounding is needed)
   return convertFloatToFloat(initialFormat, targetFormat, roundingMode, normalised);

@@ -304,7 +304,7 @@ namespace symfpu {
 
     // Moves the leading 1 up to the correct position, adjusting the
     // exponent as required.
-    unpackedFloat<t> normaliseUp (const fpt &/*format*/) const {
+    unpackedFloat<t> normaliseUp (void) const {
       PRECONDITION(!(nan || inf || zero));  // Should not be attempting to normalise these.
 
       normaliseShiftResult<t> normal(normaliseShift<t>(this->significand));
@@ -321,7 +321,7 @@ namespace symfpu {
     }
 
     
-    unpackedFloat<t> normaliseUpDetectZero (const fpt &format) const {
+    unpackedFloat<t> normaliseUpDetectZero (void) const {
       PRECONDITION(!(nan || inf || zero));  // Should not be attempting to normalise these.
 
       normaliseShiftResult<t> normal(normaliseShift<t>(this->significand));
@@ -333,7 +333,7 @@ namespace symfpu {
       sbv correctedExponent(this->exponent - signedAlignAmount);
 
       return ITE(normal.isZero,
-		 unpackedFloat<t>::makeZero(format, this->sign),
+		 unpackedFloat<t>::makeZero(exponentWidth, this->getSignificand().getWidth(), this->sign),
 		 unpackedFloat<t>(this->sign, correctedExponent, normal.normalised));
     }
 

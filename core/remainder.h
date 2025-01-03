@@ -169,7 +169,7 @@ template <class t>
   
   probabilityAnnotation<t>(needPrevious, UNLIKELY);   // Perhaps stretching it a bit but good for approximation
   unpackedFloat<t> candidateResult(ITE(lsbRoundActive,
-				       reconstruct.normaliseUpDetectZero(format),
+				       reconstruct.normaliseUpDetectZero(),
 				       left));
 
   // The final subtract is a little different as previous ones were
