@@ -277,9 +277,6 @@ template <class t>
    // Work out if an effective subtraction
    prop effectiveAdd((left.getSign() ^ right.getSign()) ^ isAdd);
    
-   bwt exponentWidth(left.getExponent().getWidth() + 1);
-   bwt significandWidth(left.getSignificand().getWidth());
-   
    /* Exponent difference and effective add implies a large amount about the output exponent and flags
    ** R denotes that this is possible via rounding up and incrementing the exponent
    **
@@ -331,9 +328,24 @@ template <class t>
    // Extended so no info lost, negate before shift so that sign-extension works
    ubv negatedSmaller(conditionalNegate<t,ubv,prop>(!effectiveAdd, ssig));
 
-   ubv shiftAmount(ec.absoluteExponentDifference.toUnsigned() // Safe as >= 0
-		   .resize(negatedSmaller.getWidth()));  // Safe as long as the significand has more bits than the exponent
-   INVARIANT(exponentWidth <= significandWidth);
+   // Performing the actual shift is a little more involved than you might think.
+   // This is one of the rare cases where exponent and significand values are mixed.
+   // As such you have to be careful about how to handle formats with things like
+   // more exponent bits than significand bits.
+   ubv unsignedExponentDiff(ec.absoluteExponentDifference.toUnsigned());  // Safe as >= 0
+   ubv *formatShiftAmount = NULL;
+
+   if (unsignedExponentDiff.getWidth() <= negatedSmaller.getWidth()) {
+     formatShiftAmount = new ubv(unsignedExponentDiff.matchWidth(negatedSmaller));
+   } else {
+     // Shift amounts that exceed the significandWidth are overkill
+     // so we can simply reduce the value before we resize.
+     ubv maxEffectiveShift(unsignedExponentDiff.getWidth(), negatedSmaller.getWidth());
+     formatShiftAmount = new ubv(min<t>(unsignedExponentDiff, maxEffectiveShift)
+				 .resize(negatedSmaller.getWidth()));
+   }
+   ubv shiftAmount(*formatShiftAmount);
+   delete formatShiftAmount;
 
 
    // Shift the smaller significand
@@ -384,6 +396,7 @@ template <class t>
    ubv alignedSum(conditionalLeftShiftOne<t,ubv,prop>(minorCancel,
 						      conditionalRightShiftOne<t,ubv,prop>(overflow, sum)));
 
+   bwt exponentWidth(left.getExponent().getWidth() + 1);
    sbv exponentCorrectionTerm(ITE(minorCancel,
 				  -sbv::one(exponentWidth),
 				  ITE(overflow,
