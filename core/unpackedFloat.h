@@ -171,7 +171,7 @@ namespace symfpu {
       // However we do need to increase it to allow subnormals (packed)
       // to be normalised.
 
-      // The smallest exponent is:
+      // The smallest subnormal exponent is:
       //  -2^(format.exponentWidth() - 1) - 2  -  (format.significandWidth() - 1)
       //
       // We need an unpacked exponent width u such that
