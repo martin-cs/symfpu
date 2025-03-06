@@ -51,7 +51,7 @@ template <class t>
   typedef typename t::prop prop;
   typedef typename t::ubv ubv;
   typedef typename t::sbv sbv;
-  typedef typename t::fpt fpt;
+  //typedef typename t::fpt fpt;
 
   PRECONDITION(uf.valid(format));
 
@@ -94,11 +94,14 @@ template <class t>
 
   unpackedFloat<t> sqrtResult(sqrtSign, exponentHalved, finishedSignificand);
 
-  
-  fpt extendedFormat(format.exponentWidth(), format.significandWidth() + 2);
-  // format.exponentWidth() - 1 should also be true but requires shrinking the exponent and
-  // then increasing it in the rounder
-  POSTCONDITION(sqrtResult.valid(extendedFormat));
+  // Format specific constants
+  sbv sqrtResultExponentUpperBound(unpackedFloat<t>::maxNormalExponent(format).signExtendRightShift(sbv::one(exponentWidth)));
+  sbv sqrtResultExponentLowerBound(unpackedFloat<t>::minSubnormalExponent(format).signExtendRightShift(sbv::one(exponentWidth)));
+
+  POSTCONDITION(sqrtResult.wellFormed(sqrtResultExponentLowerBound, sqrtResultExponentUpperBound));
+  // The postcondition implies that it would be possible to reduce the exponent width by one bit.
+  // However when used in sqrt, the rounder will then extend it back to where it was so
+  // it doesn't really seem worth doing.
 
   return sqrtResult;
  }
@@ -118,14 +121,59 @@ template <class t>
 
   unpackedFloat<t> sqrtResult(arithmeticSqrt(format, uf));
 
-  // Exponent is divided by two, thus it can't overflow, underflow or generate a subnormal number.
-  // The last one is quite subtle but you can show that the largest number generatable
-  // by arithmeticSqrt is 111...111:0:1 with the last two as the guard and sticky bits.
-  // Round up (when the sign is positive) and round down (when the sign is negative --
-  // the result will be computed but then discarded) are the only cases when this can increment the significand.
-  customRounderInfo<t> cri(prop(true), prop(true), prop(false), prop(true),
-			   !((roundingMode == t::RTP() && !sqrtResult.getSign()) ||
-			     (roundingMode == t::RTN() &&  sqrtResult.getSign())));
+  // Arithmetic square root effectively compresses the numbers down around 1.
+  // This means the results have a number of useful properties that simplify
+  // rounding:
+  //
+  // 1. Exponent is divided by two, thus it can't overflow or underflow.
+  prop noOverflow(true);
+  prop noUnderflow(true);
+
+  // 2. Very few formats can generate a arithmetic result in the subnormal range.
+  //    If the format is (e,s) and p = 2^(e-1) - 1 then
+  //       largestSubnormalExponent = -p
+  //       smallestSubnormalExponet = -p - (s-2)
+  //    largestSubnormalExponent is always odd.
+  //    smallestSubnormalExponet is odd if and only if s is even
+  //
+  //    Let -v be the exponent of the result of the sqrt.
+  //    That means that the argument must have an exponent in the
+  //    range [-2v - 1, -2v].
+  //    If s is odd, then smallestSubnormalExponent is even so
+  //    we can choose the even case:
+  //      -p - (s-2) <= -2v   -v <= -p
+  //      -p - (s-2) <= -2p
+  //           (s-2) >=   p
+  //            s    >=  2^(e-1) + 1
+  //
+  //    If s is even, then smallestSubnormalExponent is odd so
+  //    we need to consider odd case:
+  //      -p - (s-2) <= -2v - 1   -v <= -p
+  //      -p - (s-2) + 1 <= -2p
+  //               (s-1) >=   p
+  //                s    >=  2^(e-1)
+  //
+  //     Notably this occurs with formats with significands equal to or
+  //     longer than...
+  //      (2,2), (3,4), (4,8), (5,16), (6,32), (7,64), (8,128) ...
+  //     Also note that (2,2) is a special case as it only has one subnormal
+  //     number which is 0.5, so whether this occurs depends on the rounding
+  //     mode. We do not optimise this case.
+  prop canHaveSubnormalResults(positionOfLeadingOne(format.significandWidth()) >= format.exponentWidth() - 1);
+
+  // 3. Rounding will very rarely cause the significand to overflow.
+  //    You can show that the largest number generatable by arithmeticSqrt is
+  //    111...111:0:1 with the last two as the guard and sticky bits.
+  //    This means it is dependent on the rounding mode.
+  //    Round up (when the sign is positive) and
+  //    round down (when the sign is negative -- the result will be computed but then discarded)
+  //    are the only cases when this can increment the significand.
+  prop noSignificandOverflow(!((roundingMode == t::RTP() && !sqrtResult.getSign()) ||
+			       (roundingMode == t::RTN() &&  sqrtResult.getSign())));
+
+  // Use a custom rounder to make use of this information
+  customRounderInfo<t> cri(noOverflow, noUnderflow, prop(false), !canHaveSubnormalResults, noSignificandOverflow);
+
   unpackedFloat<t> roundedSqrtResult(customRounder(format, roundingMode, sqrtResult, cri));
   
   unpackedFloat<t> result(addSqrtSpecialCases(format, uf, roundedSqrtResult.getSign(), roundedSqrtResult));
