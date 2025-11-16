@@ -36,19 +36,36 @@ unpackedFloat<t> convertFloatToFloat (const typename t::fpt &sourceFormat,
   bool significandIncreased = unpackedFloat<t>::significandWidth(sourceFormat) <= unpackedFloat<t>::significandWidth(targetFormat);
 
   bwt expExtension = (exponentIncreased) ? unpackedFloat<t>::exponentWidth(targetFormat) - unpackedFloat<t>::exponentWidth(sourceFormat) : 0;
-  bwt sigExtension = (significandIncreased) ? unpackedFloat<t>::significandWidth(targetFormat) - unpackedFloat<t>::significandWidth(sourceFormat) : 0;
-
-  unpackedFloat<t> extended(input.extend(expExtension, sigExtension));
 
   // Format sizes are literal so it is safe to branch on them
   if (exponentIncreased && significandIncreased) {
-    // Fast path strict promotions
+    bwt sigExtension = (significandIncreased) ? unpackedFloat<t>::significandWidth(targetFormat) - unpackedFloat<t>::significandWidth(sourceFormat) : 0;
 
+    // Fast path strict promotions
+    unpackedFloat<t> extended(input.extend(expExtension, sigExtension));
     POSTCONDITION(extended.valid(targetFormat));
     
     return extended;
 
   } else {
+    // If one or both of exponent or significand is decreasing then we will need to round.
+
+    // There is a slight subtlety here.
+    // To round we need at least targetSignificandWidth + 2 bits in our significand for guard and sticky bits.
+    // Thus we need to make sure the significand increase (it there is one), is enough.
+    // There are two cases we need to consider:
+    //
+    //   significandIncreased   =>   we need targetFormat + 2 bits
+    //  !significandIncreased   =>   check for the case when targetFormat is exactly 1 less than sourceFormat
+    //
+    // If the significand width is unchanged it will be the significandIncreased path.
+    // As the extension adds zeros this should all simplify away.
+
+    bwt sigExtension = (significandIncreased) ?
+      (unpackedFloat<t>::significandWidth(targetFormat) - unpackedFloat<t>::significandWidth(sourceFormat)) + 2 :
+      ((unpackedFloat<t>::significandWidth(targetFormat) == unpackedFloat<t>::significandWidth(sourceFormat) - 1) ? 1 : 0);
+
+    unpackedFloat<t> extended(input.extend(expExtension, sigExtension));
 
     unpackedFloat<t> rounded(rounder(targetFormat, roundingMode, extended));
 
