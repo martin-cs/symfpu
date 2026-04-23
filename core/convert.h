@@ -410,7 +410,7 @@ template <class t>
    typedef typename t::ubv ubv;
    typedef typename t::sbv sbv;
 
-
+   PRECONDITION(targetWidth >= 1);
    PRECONDITION(decimalPointPosition < targetWidth);
 
 
@@ -470,7 +470,7 @@ template <class t>
    //typedef typename t::ubv ubv;
    typedef typename t::sbv sbv;
 
-
+   PRECONDITION(targetWidth >= 1);
    PRECONDITION(decimalPointPosition < targetWidth);
 
 
