@@ -227,12 +227,16 @@ template <class t>
 template <class t>
   unpackedFloat<t> convertSBVToFloat (const typename t::fpt &targetFormat,
 				      const typename t::rm &roundingMode,
-				      const typename t::sbv &input,
+				      const typename t::sbv &preInput,
 				      const typename t::bwt &decimalPointPosition = 0) {
   typedef typename t::bwt bwt;
   typedef typename t::prop prop;
   typedef typename t::sbv sbv;
   typedef typename t::fpt fpt;
+
+  // I am assured that a 1 bit signed number is a meaningful thing
+  // and that 0 is interpreted 0 and 1 is interpreted as -1
+  sbv input((preInput.getWidth() == 1) ? preInput.extend(1) : preInput);
 
   bwt inputWidth(input.getWidth());
 
