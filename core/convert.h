@@ -256,7 +256,7 @@ template <class t>
    typedef typename t::ubv ubv;
    typedef typename t::sbv sbv;
 
-
+   PRECONDITION(targetWidth >= 1);
    PRECONDITION(decimalPointPosition < targetWidth);
 
 
@@ -348,7 +348,9 @@ template <class t>
 			ITE(input.getZero() || fraction, ubv::zero(ssWidth), ubv::allOnes(ssWidth)));
 
    ubv expandedSignificand(zerodSignificand.extend(targetWidth - 1)); // Start with the significand in the LSB of output
-
+   // Note that if your target width is 1 then this will extend by nothing.
+   // This may seem like a problem but remember that the unpacked significand is 1.xyz
+   // So the top bit is the unit bit.
 
    // Prepare exponent
    bwt maxShift(targetWidth - 1); // - 1 as we are already at LSB
@@ -387,7 +389,7 @@ template <class t>
    typedef typename t::ubv ubv;
    typedef typename t::sbv sbv;
 
-
+   PRECONDITION(targetWidth >= 1);
    PRECONDITION(decimalPointPosition < targetWidth);
 
 
@@ -429,6 +431,7 @@ template <class t>
 		  undefValue,
 		  rounded.significand));
 
+   POSTCONDITION(result.getWidth() == targetWidth);
    return result;
  }
 
@@ -447,7 +450,7 @@ template <class t>
    //typedef typename t::ubv ubv;
    typedef typename t::sbv sbv;
 
-
+   PRECONDITION(targetWidth >= 1);
    PRECONDITION(decimalPointPosition < targetWidth);
 
 
@@ -489,6 +492,7 @@ template <class t>
 		  undefValue,
 		  conditionalNegate<t,sbv,prop>(input.getSign(), rounded.significand.toSigned())));
 
+   POSTCONDITION(result.getWidth() == targetWidth);
    return result;
  }
 
