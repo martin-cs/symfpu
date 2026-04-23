@@ -192,20 +192,22 @@ unpackedFloat<t> roundToIntegral (const typename t::fpt &format,
 template <class t>
   unpackedFloat<t> convertUBVToFloat (const typename t::fpt &targetFormat,
 				      const typename t::rm &roundingMode,
-				      const typename t::ubv &preInput,
+				      const typename t::ubv &input,
 				      const typename t::bwt &decimalPointPosition = 0) {
   
   typedef typename t::bwt bwt;
   typedef typename t::prop prop;
-  typedef typename t::ubv ubv;
   typedef typename t::sbv sbv;
   typedef typename t::fpt fpt;
 
-  // In the case of a 1 bit input(?) extend to 2 bits so that the intermediate float is a sensible format
-  ubv input((preInput.getWidth() == 1) ? preInput.extend(1) : preInput);
-
   bwt inputWidth(input.getWidth());
 
+  // 1 bit inputs need to be handled separately so let's do an efficient handling
+  if (inputWidth == 1) {
+    return ITE(input.isAllOnes(), unpackedFloat<t>::makeOne(targetFormat, prop(false)), unpackedFloat<t>::makeZero(targetFormat, prop(false)));
+  }
+
+  PRECONDITION(inputWidth > 1);   // A 1 bit signed-number is handled above
   PRECONDITION(decimalPointPosition <= inputWidth);
   
   // Devise an appropriate format 
@@ -236,7 +238,13 @@ template <class t>
 
   bwt inputWidth(input.getWidth());
 
-  PRECONDITION(inputWidth > 1);   // A 1 bit signed-number is ???
+  // I am assured that a 1 bit signed number is a meaningful thing
+  // and that 0 is interpreted 0 and 1 is interpreted as -1
+  if (inputWidth == 1) {
+    return ITE(input.isAllOnes(), unpackedFloat<t>::makeOne(targetFormat, prop(true)), unpackedFloat<t>::makeZero(targetFormat, prop(false)));
+  }
+
+  PRECONDITION(inputWidth > 1);   // A 1 bit signed-number is handled above
   PRECONDITION(decimalPointPosition <= inputWidth);
   
   // Devise an appropriate format 
