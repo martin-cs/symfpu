@@ -195,8 +195,9 @@ namespace symfpu {
     
     // Normal guard and sticky bits
     bwt guardBitPosition(sigWidth - (targetWidth + 1));
-    prop guardBit(significand.extract(guardBitPosition, guardBitPosition).isAllOnes());
+    INVARIANT(guardBitPosition >= 1);
 
+    prop guardBit(significand.extract(guardBitPosition, guardBitPosition).isAllOnes());
     prop stickyBit(!significand.extract(guardBitPosition - 1,0).isAllZeros());
 
     // Rounding decision
@@ -207,10 +208,12 @@ namespace symfpu {
     ubv roundedSignificand(conditionalIncrement<t>(roundUp, extractedSignificand));
 
     ubv overflowBit(roundedSignificand.extract(targetWidth, targetWidth) & ubv(roundUp));
-    ubv carryUpMask((overflowBit | ubv(knownLeadingOne)).append(ubv::zero(targetWidth - 1)));   // Cheaper than conditional shift
+    ubv restOfSignificand(roundedSignificand.extract(targetWidth-1,0));
+
+    ubv carryUpMask((overflowBit | ubv(knownLeadingOne)).matchWidth(restOfSignificand).modularLeftShift(ubv(restOfSignificand.getWidth(),targetWidth - 1)));   // Cheaper than conditional shift
     
     // Build result
-    significandRounderResult<t> result(roundedSignificand.extract(targetWidth-1,0) | carryUpMask,
+    significandRounderResult<t> result(restOfSignificand | carryUpMask,
 				    overflowBit.isAllOnes());
 
     return result;
