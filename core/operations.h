@@ -134,9 +134,13 @@ namespace symfpu {
   template <class t, class bv, class prop>
   bv conditionalNegate (const prop &p, const bv &b) {
     typename t::bwt w(b.getWidth());
-    PRECONDITION(w >= 2);
-    PRECONDITION(IMPLIES(p, !(b.extract(w - 1, w - 1).isAllOnes() &&
-			      b.extract(w - 2,     0).isAllZeros())));
+
+    // Apparently negating 1 bit bit-vectors is a meaningful operation.
+    // This means this precondition is potentially risky to evaluate.
+    if (w >= 2) {
+      PRECONDITION(IMPLIES(p, !(b.extract(w - 1, w - 1).isAllOnes() &&
+				b.extract(w - 2,     0).isAllZeros())));
+    }
     
     return bv(ITE(p, -b, b));
   }

@@ -464,7 +464,7 @@ template <class t>
 
    typedef typename t::bwt bwt;
    typedef typename t::prop prop;
-   //typedef typename t::ubv ubv;
+   typedef typename t::ubv ubv;
    typedef typename t::sbv sbv;
 
    PRECONDITION(targetWidth >= 1);
@@ -497,12 +497,21 @@ template <class t>
 							targetWidth, decimalPointPosition));
 
    // Put the result together
+
+   // Overflow checking should be as simple as looking at the top bit.
+   // This would work for sign-and-magnitude and 1's complement but doesn't work for 2's complement
+   // because 2^{n-1} is representable if (and only if) negated.
+   // To make matters worse, we also need to consider the case of targetWidth == 1
    bwt roundSigWidth(rounded.significand.getWidth());
+   ubv topBit(rounded.significand.extract(roundSigWidth - 1, roundSigWidth - 1));
+   prop valueOverflows(topBit.isAllOnes() &&
+		       ((roundSigWidth == 1) ?
+			!input.getSign() :
+			!(input.getSign() && rounded.significand.extract(roundSigWidth - 2, 0).isAllZeros())));
+
    prop undefinedResult(earlyUndefinedResult ||
 			rounded.incrementExponent ||    // Definite Overflow
-			(rounded.significand.extract(roundSigWidth - 1,
-						     roundSigWidth - 1).isAllOnes() &&
-			 !(input.getSign() && rounded.significand.extract(roundSigWidth - 2, 0).isAllZeros()))); // -2^{n-1} is the only safe "overflow" case
+			valueOverflows);
 
    
    sbv result(ITE(undefinedResult,
