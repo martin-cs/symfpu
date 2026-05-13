@@ -122,7 +122,7 @@ float nativeFunctions<float>::sqrt (float f) {
 
 template <>
 double nativeFunctions<double>::sqrt (double f) {
-  return sqrt(f);
+  return ::sqrt(f);
 }
 
 template <>
@@ -213,7 +213,7 @@ float nativeFunctions<float>::fma (float f, float g, float h) {
 
 template <>
 double nativeFunctions<double>::fma (double f, double g, double h) {
-  return fma(f,g,h);
+  return ::fma(f,g,h);
 }
 
 
