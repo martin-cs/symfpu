@@ -133,6 +133,10 @@ namespace symfpu {
       return unpackedFloat<t>(FPCLASS_ZERO, s, defaultExponent(unpackedFloat<t>::exponentWidth(fmt)), defaultSignificand(unpackedFloat<t>::significandWidth(fmt)));
     }
 
+    static unpackedFloat<t> makeOne(const fpt &fmt, const prop &s) {
+      return unpackedFloat<t>(FPCLASS_NUMBER, s, defaultExponent(unpackedFloat<t>::exponentWidth(fmt)), defaultSignificand(unpackedFloat<t>::significandWidth(fmt)));
+    }
+
     static unpackedFloat<t> makeInf(const fpt &fmt, const prop &s) {
       return unpackedFloat<t>(FPCLASS_INF, s, defaultExponent(unpackedFloat<t>::exponentWidth(fmt)), defaultSignificand(unpackedFloat<t>::significandWidth(fmt)));
     }
