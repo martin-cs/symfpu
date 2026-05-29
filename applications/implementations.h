@@ -508,6 +508,7 @@ class sympfuImplementation {
   static void setFormat (const fpt &newFormat) {
     if (format != NULL) {
       delete format;
+      format = NULL;
     }
     format = new fpt(newFormat);
     return;
@@ -515,6 +516,7 @@ class sympfuImplementation {
 
   static void destroyFormat() {
     delete format;
+    format = NULL;
     return;
   }
   
