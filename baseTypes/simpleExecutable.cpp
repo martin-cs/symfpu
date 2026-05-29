@@ -49,11 +49,13 @@ namespace symfpu {
 
     template <>
     int64_t bitVector<int64_t>::makeRepresentable (const bitWidthType w, const int64_t v) {
-      if (v <= ((1LL << (w - 1)) - 1) && (-(1LL << (w - 1)) <= v)) {
-	return v;
-      } else {
-	return 0;
-      }
+      // Mask to w bits then sign-extend.  Avoids overflow at w == maxWidth()
+      // and matches the two's-complement wrap that modular operations expect.
+      uint64_t mask(bitVector<int64_t>::nOnes(w));
+      uint64_t bits(*((uint64_t *)(&v)) & mask);
+      uint64_t signBit(1ULL << (w - 1));
+      uint64_t extended((bits & signBit) ? (bits | ~mask) : bits);
+      return *((int64_t *)(&extended));
     }
 
     
