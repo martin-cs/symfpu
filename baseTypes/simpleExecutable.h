@@ -285,7 +285,11 @@ namespace symfpu {
 
       inline proposition operator == (const bitVector<T> &op) const {
 	PRECONDITION(this->width == op.width);
-	return proposition(this->value == op.value);
+	// Mask to width before comparison so distinct internal encodings of
+	// the same logical value (e.g. width-1 signed -1 stored as 1 or -1)
+	// compare equal.
+	T mask(bitVector<T>::nOnes(this->width));
+	return proposition((this->value & mask) == (op.value & mask));
       }
 
       inline proposition operator <= (const bitVector<T> &op) const {
