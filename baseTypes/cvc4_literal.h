@@ -159,6 +159,7 @@ namespace symfpu {
       bitVector<isSigned> modularIncrement () const;
       bitVector<isSigned> modularDecrement () const;
       bitVector<isSigned> modularAdd (const bitVector<isSigned> &op) const;
+      bitVector<isSigned> modularSubtract (const bitVector<isSigned> &op) const;
       bitVector<isSigned> modularNegate () const;
 
 

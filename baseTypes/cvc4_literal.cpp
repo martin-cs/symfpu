@@ -161,6 +161,11 @@ namespace symfpu {
     }
 
     template <bool isSigned>
+    bitVector<isSigned> bitVector<isSigned>::modularSubtract (const bitVector<isSigned> &op) const {
+      return *this - op;
+    }
+
+    template <bool isSigned>
     bitVector<isSigned> bitVector<isSigned>::modularNegate () const {
       return -(*this);
     }

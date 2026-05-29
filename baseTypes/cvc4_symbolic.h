@@ -445,6 +445,10 @@ namespace symfpu {
 	return *this + op;
       }
 
+      inline bitVector<isSigned> modularSubtract (const bitVector<isSigned> &op) const {
+	return *this - op;
+      }
+
       inline bitVector<isSigned> modularNegate () const {
 	return -(*this);
       }
