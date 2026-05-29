@@ -43,6 +43,7 @@ namespace symfpu {
     template <bool isSigned>
     bitVector<isSigned> bitVector<isSigned>::maxValue (const bitWidthType &w) {
       if (isSigned) {
+	if (w == 1) { return bitVector<true>::zero(1); }
 	CVC4BV base(w-1, 0U);
 	return bitVector<true>((~base).zeroExtend(1));
       } else {
