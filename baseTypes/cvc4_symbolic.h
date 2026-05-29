@@ -307,7 +307,7 @@ namespace symfpu {
       }
 
       inline Node fromProposition (Node node) const {
-	#ifdef PROPSYMFPUISBOOL
+	#ifdef SYMFPUPROPISBOOL
 	return boolNodeToBV(node);
 	#else
 	return node;
@@ -315,7 +315,7 @@ namespace symfpu {
       }
 
       inline Node toProposition (Node node) const {
-	#ifdef PROPSYMFPUISBOOL
+	#ifdef SYMFPUPROPISBOOL
 	return node;
 	#else
 	return boolNodeToBV(node);
@@ -455,7 +455,7 @@ namespace symfpu {
       /*** Comparisons ***/
 
       inline proposition operator == (const bitVector<isSigned> &op) const {
-#ifdef PROPSYMFPUISBOOL
+#ifdef SYMFPUPROPISBOOL
 	return proposition(::CVC4::NodeManager::currentNM()->mkNode(::CVC4::kind::EQUAL, this->node, op.node));
 #else
 	return proposition(::CVC4::NodeManager::currentNM()->mkNode(::CVC4::kind::BITVECTOR_COMP, this->node, op.node));
