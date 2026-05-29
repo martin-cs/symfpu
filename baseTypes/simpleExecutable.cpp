@@ -113,19 +113,26 @@ namespace symfpu {
       uint64_t signBit = left & (1ULL << (width - 1));
  
       if (right <= width)  {
-	for (uint64_t i = 1; i <= width; i <<= 1) {
+	for (uint64_t i = 1; i < width; i <<= 1) {
 	  if (right & i) {
 	    uint64_t iOnes = ((1ULL << i) - 1);
 	    stickyBit |= ((newValue & iOnes) ? 1 : 0);
-	    
+
 	    // Sign extending shift
 	    if (signBit) {
 	      newValue = (newValue >> i) | (iOnes << (width - i));
 	    } else {
 	      newValue = (newValue >> i);
 	    }
-	    
+
 	  }
+	}
+	if (right == width) {
+	  // Whole-word shift collapses the value; stickyBit is set if any bit was set.
+	  stickyBit |= (newValue ? 1 : 0);
+	  // All-ones across `width` bits without shifting by `width` (UB at maxWidth).
+	  uint64_t allOnes = (width == 64) ? ~0ULL : ((1ULL << width) - 1);
+	  newValue = (signBit) ? allOnes : 0;
 	}
       } else {
 	newValue = (signBit) ? 0xFFFFFFFFFFFFFFFFULL : 0x0;
