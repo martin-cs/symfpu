@@ -108,7 +108,13 @@ namespace symfpu {
     bitVector<false> bitVector<false>::operator / (const bitVector<false> &op) const { return this->CVC4BV::unsignedDivTotal(op); }
 
     template <>
+    bitVector<true> bitVector<true>::operator / (const bitVector<true> &op) const { return this->CVC4BV::signedDivTotal(op); }
+
+    template <>
     bitVector<false> bitVector<false>::operator % (const bitVector<false> &op) const { return this->CVC4BV::unsignedRemTotal(op); }
+
+    template <>
+    bitVector<true> bitVector<true>::operator % (const bitVector<true> &op) const { return this->CVC4BV::signedRemTotal(op); }
 
     template <bool isSigned>
     bitVector<isSigned> bitVector<isSigned>::operator - (void) const { return this->CVC4BV::operator-(); }
