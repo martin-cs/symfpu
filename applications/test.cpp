@@ -177,6 +177,11 @@ typedef sympfuImplementation<uint32_t, traits> singlePrecisionExecutableSymfpu;
 typedef native<uint32_t, float> singlePrecisionHardware;
 
 
+// Tally of comparison mismatches across the run.  main() returns nonzero
+// when this is nonzero so that CI can detect regressions.
+static uint64_t failureCount = 0;
+
+
 
 /*** Output helpers ***/
 
@@ -289,7 +294,9 @@ void unaryFunctionTest (const int verbose, const uint64_t start, const uint64_t 
       uint32_t reference = ref(input);
       uint32_t computed = test(input);
       
-      if (verbose || !singlePrecisionHardware::smtlibEqual(computed, reference)) {
+      bool ok = singlePrecisionHardware::smtlibEqual(computed, reference);
+      if (!ok) { ++failureCount; }
+      if (verbose || !ok) {
 	fprintf(stdout,"vector[%d] ", (uint32_t)i);
 	fprintf(stdout,"input = 0x%x, computed = 0x%x, real = 0x%x\n", input, computed, reference);
 	fflush(stdout);
@@ -381,7 +388,9 @@ void unaryRoundedFunctionTest (const int verbose, const uint64_t start, const ui
       uint32_t reference = ref(input);
       uint32_t computed = test(input);
       
-      if (verbose || !singlePrecisionHardware::smtlibEqual(computed, reference)) {
+      bool ok = singlePrecisionHardware::smtlibEqual(computed, reference);
+      if (!ok) { ++failureCount; }
+      if (verbose || !ok) {
 	fprintf(stdout,"vector[%d] ", (uint32_t)i);
 	fprintf(stdout,"input = 0x%x, computed = 0x%x, real = 0x%x\n", input, computed, reference);
 	fflush(stdout);
@@ -479,7 +488,9 @@ void unaryPredicateTest (const int verbose, const uint64_t start, const uint64_t
       bool reference = ref(input);
       bool computed = test(input);
       
-      if (verbose || !(computed == reference)) {
+      bool ok = (computed == reference);
+      if (!ok) { ++failureCount; }
+      if (verbose || !ok) {
 	fprintf(stdout,"vector[%d] ", (uint32_t)i);
 	fprintf(stdout,"input = 0x%x, computed = %d, real = %d\n", input, computed, reference);
 	fflush(stdout);
@@ -598,7 +609,9 @@ void binaryPredicateTest (const int verbose, const uint64_t start, const uint64_
     bool reference = ref(input1, input2);
     bool computed = test(input1, input2);
     
-    if (verbose || !(computed == reference)) {
+    bool ok = (computed == reference);
+    if (!ok) { ++failureCount; }
+    if (verbose || !ok) {
       fprintf(stdout,"vector[%d -> (%d,%d)] ", (uint32_t)i, (uint32_t)right, (uint32_t)left);
       fprintf(stdout,"input1 = 0x%x, input2 = 0x%x, computed = %d, real = %d\n", input1, input2, computed, reference);
       fflush(stdout);
@@ -721,7 +734,9 @@ void binaryFunctionTest (const int verbose, const uint64_t start, const uint64_t
     uint32_t reference = ref(input1, input2);
     uint32_t computed = test(input1, input2);
 
-    if (verbose || !singlePrecisionHardware::smtlibEqual(computed, reference)) {
+    bool ok = singlePrecisionHardware::smtlibEqual(computed, reference);
+    if (!ok) { ++failureCount; }
+    if (verbose || !ok) {
       fprintf(stdout,"vector[%d -> (%d,%d)] ", (uint32_t)i, (uint32_t)right, (uint32_t)left);
       fprintf(stdout,"input1 = 0x%x, input2 = 0x%x, computed = 0x%x, real = 0x%x\n", input1, input2, computed, reference);
       fflush(stdout);
@@ -844,7 +859,9 @@ void binaryRoundedFunctionTest (const int verbose, const uint64_t start, const u
     uint32_t reference = ref(input1, input2);
     uint32_t computed = test(input1, input2);
 
-    if (verbose || !singlePrecisionHardware::smtlibEqual(computed, reference)) {
+    bool ok = singlePrecisionHardware::smtlibEqual(computed, reference);
+    if (!ok) { ++failureCount; }
+    if (verbose || !ok) {
       fprintf(stdout,"vector[%d -> (%d,%d)] ", (uint32_t)i, (uint32_t)right, (uint32_t)left);
       fprintf(stdout,"input1 = 0x%x, input2 = 0x%x, computed = 0x%x, real = 0x%x\n", input1, input2, computed, reference);
       fflush(stdout);
@@ -1006,7 +1023,9 @@ void ternaryRoundedFunctionTest (const int verbose, const uint64_t start, const 
     uint32_t reference = ref(input1, input2, input3);
     uint32_t computed = test(input1, input2, input3);
 
-    if (verbose || !singlePrecisionHardware::smtlibEqual(computed, reference)) {
+    bool ok = singlePrecisionHardware::smtlibEqual(computed, reference);
+    if (!ok) { ++failureCount; }
+    if (verbose || !ok) {
       fprintf(stdout,"vector[%d -> (%d,%d,%d)] ", (uint32_t)i, (uint32_t)right, (uint32_t)middle, (uint32_t)left);
       fprintf(stdout,"input1 = 0x%x, input2 = 0x%x, input3 = 0x%x, computed = 0x%x, real = 0x%x\n", input1, input2, input3, computed, reference);
       fflush(stdout);
@@ -1421,5 +1440,5 @@ int main (int argc, char **argv) {
 
   singlePrecisionExecutableSymfpu::destroyFormat();
 
-  return 1;
+  return (failureCount == 0) ? 0 : 1;
 }
