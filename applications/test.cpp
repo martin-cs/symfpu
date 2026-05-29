@@ -1199,6 +1199,15 @@ void regressionCtorMaxWidthTest (const int verbose, const uint64_t, const uint64
   if (verbose || !ok) { fprintf(stdout, "%s", ok ? "PASS" : "FAIL"); }
 }
 
+void regressionMaxValueWidth64Test (const int verbose, const uint64_t, const uint64_t) {
+  typedef symfpu::simpleExecutable::bitVector<uint64_t> bv;
+  bv mv(bv::maxValue(64));
+  bv expected(64, ~0ULL);
+  bool ok = (mv == expected);
+  if (!ok) { ++failureCount; }
+  if (verbose || !ok) { fprintf(stdout, "%s", ok ? "PASS" : "FAIL"); }
+}
+
 /*** Application ***/
 
 
@@ -1240,6 +1249,7 @@ int main (int argc, char **argv) {
     {0,0,          "remainder", INST(binaryFunction, rem),              "remainderf(f,g)",  "(fp.remainder f g)"},
     {1,0,  "isCatastrophicCancellation", regressionCatastrophicCancellationTest, regressionPrintNoop, regressionPrintNoop, NULL, NULL},
     {1,0,  "ctorAtMaxWidth", regressionCtorMaxWidthTest, regressionPrintNoop, regressionPrintNoop, NULL, NULL},
+    {1,0,  "maxValueAtMaxWidth", regressionMaxValueWidth64Test, regressionPrintNoop, regressionPrintNoop, NULL, NULL},
     {0,0,                 NULL, NULL, NULL, NULL,                           NULL,  NULL}
   };
 

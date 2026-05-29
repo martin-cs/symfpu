@@ -66,7 +66,7 @@ namespace symfpu {
     template <>
     bitVector<uint64_t> bitVector<uint64_t>::maxValue (const bitWidthType &w) {
       PRECONDITION(w != 1);
-      return bitVector<uint64_t>(w, (1ULL << w) - 1);
+      return bitVector<uint64_t>(w, bitVector<uint64_t>::nOnes(w));
     }
 
     template <>
