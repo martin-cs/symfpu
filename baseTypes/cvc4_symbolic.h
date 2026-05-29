@@ -478,11 +478,19 @@ namespace symfpu {
       }
 
       inline proposition operator < (const bitVector<isSigned> &op) const {
+#ifdef SYMFPUPROPISBOOL
+	return proposition(::CVC4::NodeManager::currentNM()->mkNode((isSigned) ? ::CVC4::kind::BITVECTOR_SLT : ::CVC4::kind::BITVECTOR_ULT, this->node, op.node));
+#else
 	return proposition(::CVC4::NodeManager::currentNM()->mkNode((isSigned) ? ::CVC4::kind::BITVECTOR_SLTBV : ::CVC4::kind::BITVECTOR_ULTBV, this->node, op.node));
+#endif
       }
 
       inline proposition operator > (const bitVector<isSigned> &op) const {
+#ifdef SYMFPUPROPISBOOL
+	return proposition(::CVC4::NodeManager::currentNM()->mkNode((isSigned) ? ::CVC4::kind::BITVECTOR_SLT : ::CVC4::kind::BITVECTOR_ULT, op.node, this->node));
+#else
 	return proposition(::CVC4::NodeManager::currentNM()->mkNode((isSigned) ? ::CVC4::kind::BITVECTOR_SLTBV : ::CVC4::kind::BITVECTOR_ULTBV, op.node, this->node));
+#endif
       }
 
       /*** Type conversion ***/
