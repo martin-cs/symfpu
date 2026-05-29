@@ -145,16 +145,11 @@ namespace symfpu {
       PRECONDITION(this->width == op.width);
       PRECONDITION(this->width < CHAR_BIT*sizeof(int64_t));
 
-      int64_t newValue;
-      
-      if (this->value < 0) {
-	newValue = -(-(this->value) >> op.value) + ((this->value & 0x1) ? -1 : 0); // Rounds away
-      } else {
-	newValue = this->value >> op.value;
-      }
-      
-      return bitVector<int64_t>(this->width,
-				bitVector<int64_t>::makeRepresentable(this->width, newValue));
+      // Reuse the unsigned helper, treating the stored bit pattern as the
+      // width-bit two's-complement value to be arithmetically shifted.
+      uint64_t bits(*((uint64_t *)(&this->value)) & bitVector<int64_t>::nOnes(this->width));
+      uint64_t shifted(stickyRightShift(true, this->width, bits, static_cast<uint64_t>(op.value)));
+      return bitVector<int64_t>(this->width, *((int64_t *)(&shifted)));
     }
 
     template<>

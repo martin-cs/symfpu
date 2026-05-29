@@ -1226,6 +1226,15 @@ void regressionWidth1SignedEqualityTest (const int verbose, const uint64_t, cons
   if (verbose || !ok) { fprintf(stdout, "%s", ok ? "PASS" : "FAIL"); }
 }
 
+void regressionSignExtendRightShiftTest (const int verbose, const uint64_t, const uint64_t) {
+  typedef symfpu::simpleExecutable::bitVector<int64_t> bv;
+  bv v(8, -2), sh(8, 2);
+  bv expected(8, -1);
+  bool ok = (v.signExtendRightShift(sh) == expected);
+  if (!ok) { ++failureCount; }
+  if (verbose || !ok) { fprintf(stdout, "%s", ok ? "PASS" : "FAIL"); }
+}
+
 /*** Application ***/
 
 
@@ -1270,6 +1279,7 @@ int main (int argc, char **argv) {
     {1,0,  "maxValueAtMaxWidth", regressionMaxValueWidth64Test, regressionPrintNoop, regressionPrintNoop, NULL, NULL},
     {1,0,  "contractMasksHighBits", regressionContractMaskTest, regressionPrintNoop, regressionPrintNoop, NULL, NULL},
     {1,0,  "width1SignedEquality", regressionWidth1SignedEqualityTest, regressionPrintNoop, regressionPrintNoop, NULL, NULL},
+    {1,0,  "signExtendRightShift", regressionSignExtendRightShiftTest, regressionPrintNoop, regressionPrintNoop, NULL, NULL},
     {0,0,                 NULL, NULL, NULL, NULL,                           NULL,  NULL}
   };
 
