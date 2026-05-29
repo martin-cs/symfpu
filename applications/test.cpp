@@ -1192,6 +1192,13 @@ void regressionCatastrophicCancellationTest (const int verbose, const uint64_t, 
   if (verbose || !ok) { fprintf(stdout, "%s", ok ? "PASS" : "FAIL"); }
 }
 
+void regressionCtorMaxWidthTest (const int verbose, const uint64_t, const uint64_t) {
+  symfpu::simpleExecutable::bitVector<uint64_t> a(64, 1);
+  bool ok = (a.contents() == 1);
+  if (!ok) { ++failureCount; }
+  if (verbose || !ok) { fprintf(stdout, "%s", ok ? "PASS" : "FAIL"); }
+}
+
 /*** Application ***/
 
 
@@ -1232,6 +1239,7 @@ int main (int argc, char **argv) {
     {0,1,                "fma", INST(ternaryRoundedFunction, fma),      "fmaf(f,g)",  "(fp.fma rm f g h)"},
     {0,0,          "remainder", INST(binaryFunction, rem),              "remainderf(f,g)",  "(fp.remainder f g)"},
     {1,0,  "isCatastrophicCancellation", regressionCatastrophicCancellationTest, regressionPrintNoop, regressionPrintNoop, NULL, NULL},
+    {1,0,  "ctorAtMaxWidth", regressionCtorMaxWidthTest, regressionPrintNoop, regressionPrintNoop, NULL, NULL},
     {0,0,                 NULL, NULL, NULL, NULL,                           NULL,  NULL}
   };
 

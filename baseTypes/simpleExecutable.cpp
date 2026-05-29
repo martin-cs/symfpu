@@ -26,6 +26,7 @@ namespace symfpu {
 
     template <>
     bool bitVector<int64_t>::isRepresentable (const bitWidthType w, const int64_t v) {
+      if (w == bitVector<int64_t>::maxWidth()) { return true; }
       uint64_t shiftSafe = *((uint64_t *)(&v));
       uint64_t top = (shiftSafe >> w);
       uint64_t signbit = shiftSafe & 0x8000000000000000;
@@ -35,6 +36,7 @@ namespace symfpu {
 
     template <>
     bool bitVector<uint64_t>::isRepresentable (const bitWidthType w, const uint64_t v) {
+      if (w == bitVector<uint64_t>::maxWidth()) { return true; }
       uint64_t top = (v >> w);
       return (top == 0);
     }
