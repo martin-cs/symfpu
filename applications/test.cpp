@@ -1168,6 +1168,30 @@ struct roundingModeTestStruct {
 
 
 
+void regressionPrintNoop (const int, const uint64_t, const uint64_t,
+                          const char *, const char *, const char *) {
+}
+
+void regressionCatastrophicCancellationTest (const int verbose, const uint64_t, const uint64_t) {
+  typedef symfpu::simpleExecutable::traits traits;
+  typedef symfpu::unpackedFloat<traits> uf;
+  typedef traits::ubv ubv;
+
+  ubv one(32, 0x3f800000u);
+  ubv kilo(32, 0x44800000u);
+  uf onef(symfpu::unpack<traits>(singlePrecisionFormatObject, one));
+  uf kilof(symfpu::unpack<traits>(singlePrecisionFormatObject, kilo));
+
+  bool sameMinusSame = symfpu::isCatastrophicCancellation<traits>(
+      singlePrecisionFormatObject, onef, onef, 2, false);
+  bool farMinusFar = symfpu::isCatastrophicCancellation<traits>(
+      singlePrecisionFormatObject, onef, kilof, 2, false);
+
+  bool ok = sameMinusSame && !farMinusFar;
+  if (!ok) { ++failureCount; }
+  if (verbose || !ok) { fprintf(stdout, "%s", ok ? "PASS" : "FAIL"); }
+}
+
 /*** Application ***/
 
 
@@ -1207,6 +1231,7 @@ int main (int argc, char **argv) {
     {0,1,  "round_to_integral", INST(unaryRoundedFunction, rti),        "(fegetround()==FE_TONEAREST) ? rintf(f) : (fegetround()==FE_UPWARD) ? ceilf(f) : (fegetround()==FE_DOWNWARD) ? floorf(f) : truncf(f)",  "(fp.roundToIntegral rm f)"},
     {0,1,                "fma", INST(ternaryRoundedFunction, fma),      "fmaf(f,g)",  "(fp.fma rm f g h)"},
     {0,0,          "remainder", INST(binaryFunction, rem),              "remainderf(f,g)",  "(fp.remainder f g)"},
+    {1,0,  "isCatastrophicCancellation", regressionCatastrophicCancellationTest, regressionPrintNoop, regressionPrintNoop, NULL, NULL},
     {0,0,                 NULL, NULL, NULL, NULL,                           NULL,  NULL}
   };
 
