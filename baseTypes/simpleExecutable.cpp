@@ -85,7 +85,10 @@ namespace symfpu {
 
     template <>
     bitVector<int64_t> bitVector<int64_t>::operator- (void) const {
-      return bitVector<int64_t>(this->width, -this->value);
+      // Negate in unsigned arithmetic to avoid -INT64_MIN signed overflow UB.
+      uint64_t bits(~(*((uint64_t *)(&this->value))) + 1);
+      return bitVector<int64_t>(this->width,
+				bitVector<int64_t>::makeRepresentable(this->width, *((int64_t *)(&bits))));
     }
 
     // Used in addition
@@ -179,8 +182,10 @@ namespace symfpu {
 
     template <>
     bitVector<int64_t> bitVector<int64_t>::modularNegate (void) const {
-      return bitVector<int64_t>(this->width, 
-				bitVector<int64_t>::makeRepresentable(this->width, -this->value));
+      // Negate in unsigned arithmetic to avoid -INT64_MIN signed overflow UB.
+      uint64_t bits(~(*((uint64_t *)(&this->value))) + 1);
+      return bitVector<int64_t>(this->width,
+				bitVector<int64_t>::makeRepresentable(this->width, *((int64_t *)(&bits))));
     }
 
 
