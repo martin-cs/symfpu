@@ -328,7 +328,8 @@ namespace symfpu {
       inline bitVector<T> contract (bitWidthType reduction) const {
 	PRECONDITION(this->width > reduction);
 
-	return bitVector<T>(this->width - reduction, this->value);
+	bitWidthType newWidth(this->width - reduction);
+	return bitVector<T>(newWidth, bitVector<T>::makeRepresentable(newWidth, this->value));
       }
 
       inline bitVector<T> resize (bitWidthType newSize) const {

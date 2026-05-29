@@ -1208,6 +1208,15 @@ void regressionMaxValueWidth64Test (const int verbose, const uint64_t, const uin
   if (verbose || !ok) { fprintf(stdout, "%s", ok ? "PASS" : "FAIL"); }
 }
 
+void regressionContractMaskTest (const int verbose, const uint64_t, const uint64_t) {
+  typedef symfpu::simpleExecutable::bitVector<uint64_t> bv;
+  bv a(16, 0x1FF);
+  bv expected(8, 0xFF);
+  bool ok = (a.contract(8) == expected);
+  if (!ok) { ++failureCount; }
+  if (verbose || !ok) { fprintf(stdout, "%s", ok ? "PASS" : "FAIL"); }
+}
+
 /*** Application ***/
 
 
@@ -1250,6 +1259,7 @@ int main (int argc, char **argv) {
     {1,0,  "isCatastrophicCancellation", regressionCatastrophicCancellationTest, regressionPrintNoop, regressionPrintNoop, NULL, NULL},
     {1,0,  "ctorAtMaxWidth", regressionCtorMaxWidthTest, regressionPrintNoop, regressionPrintNoop, NULL, NULL},
     {1,0,  "maxValueAtMaxWidth", regressionMaxValueWidth64Test, regressionPrintNoop, regressionPrintNoop, NULL, NULL},
+    {1,0,  "contractMasksHighBits", regressionContractMaskTest, regressionPrintNoop, regressionPrintNoop, NULL, NULL},
     {0,0,                 NULL, NULL, NULL, NULL,                           NULL,  NULL}
   };
 
