@@ -1244,6 +1244,26 @@ void regressionModularAddWrapTest (const int verbose, const uint64_t, const uint
   if (verbose || !ok) { fprintf(stdout, "%s", ok ? "PASS" : "FAIL"); }
 }
 
+void regressionSignExtendAtMaxWidthTest (const int verbose, const uint64_t, const uint64_t) {
+  typedef symfpu::simpleExecutable::bitVector<uint64_t> bv;
+  // Full-width arithmetic shift at maxWidth(); exercises stickyRightShift's 1ULL<<64 path (E9).
+  bv sh(64, 64);
+  bool ok = (bv(64, 0x8000000000000000ULL).signExtendRightShift(sh) == bv(64, ~0ULL)) &&
+            (bv(64, 0x7FFFFFFFFFFFFFFFULL).signExtendRightShift(sh) == bv(64, 0));
+  if (!ok) { ++failureCount; }
+  if (verbose || !ok) { fprintf(stdout, "%s", ok ? "PASS" : "FAIL"); }
+}
+
+void regressionNegateMaxWidthTest (const int verbose, const uint64_t, const uint64_t) {
+  typedef symfpu::simpleExecutable::bitVector<int64_t> bv;
+  // E8 tripwire: -INT64_MIN negation is UB; value-equal at -O0, caught by -fsanitize=undefined.
+  bv v(64, static_cast<int64_t>(0x8000000000000000ULL));
+  bv expected(64, static_cast<int64_t>(0x8000000000000000ULL));
+  bool ok = (v.modularNegate() == expected);
+  if (!ok) { ++failureCount; }
+  if (verbose || !ok) { fprintf(stdout, "%s", ok ? "PASS" : "FAIL"); }
+}
+
 /*** Application ***/
 
 
@@ -1290,6 +1310,8 @@ int main (int argc, char **argv) {
     {1,0,  "width1SignedEquality", regressionWidth1SignedEqualityTest, regressionPrintNoop, regressionPrintNoop, NULL, NULL},
     {1,0,  "signExtendRightShift", regressionSignExtendRightShiftTest, regressionPrintNoop, regressionPrintNoop, NULL, NULL},
     {1,0,  "modularAddWrap", regressionModularAddWrapTest, regressionPrintNoop, regressionPrintNoop, NULL, NULL},
+    {1,0,  "signExtendAtMaxWidth", regressionSignExtendAtMaxWidthTest, regressionPrintNoop, regressionPrintNoop, NULL, NULL},
+    {1,0,  "negateAtMaxWidth", regressionNegateMaxWidthTest, regressionPrintNoop, regressionPrintNoop, NULL, NULL},
     {0,0,                 NULL, NULL, NULL, NULL,                           NULL,  NULL}
   };
 
