@@ -27,10 +27,10 @@ namespace symfpu {
     template <>
     bool bitVector<int64_t>::isRepresentable (const bitWidthType w, const int64_t v) {
       if (w == bitVector<int64_t>::maxWidth()) { return true; }
-      uint64_t shiftSafe = *((uint64_t *)(&v));
+      uint64_t shiftSafe = static_cast<uint64_t>(v);
       uint64_t top = (shiftSafe >> w);
       uint64_t signbit = shiftSafe & 0x8000000000000000;
-      int64_t stop = *((int64_t *)(&top));
+      int64_t stop = static_cast<int64_t>(top);
       return (signbit) ? (stop == bitVector<int64_t>::nOnes(bitVector<int64_t>::maxWidth() - w)) : (stop == 0LL);
     }
 
@@ -52,10 +52,10 @@ namespace symfpu {
       // Mask to w bits then sign-extend.  Avoids overflow at w == maxWidth()
       // and matches the two's-complement wrap that modular operations expect.
       uint64_t mask(bitVector<int64_t>::nOnes(w));
-      uint64_t bits(*((uint64_t *)(&v)) & mask);
+      uint64_t bits(static_cast<uint64_t>(v) & mask);
       uint64_t signBit(1ULL << (w - 1));
       uint64_t extended((bits & signBit) ? (bits | ~mask) : bits);
-      return *((int64_t *)(&extended));
+      return static_cast<int64_t>(extended);
     }
 
     
@@ -86,9 +86,9 @@ namespace symfpu {
     template <>
     bitVector<int64_t> bitVector<int64_t>::operator- (void) const {
       // Negate in unsigned arithmetic to avoid -INT64_MIN signed overflow UB.
-      uint64_t bits(~(*((uint64_t *)(&this->value))) + 1);
+      uint64_t bits(~(static_cast<uint64_t>(this->value)) + 1);
       return bitVector<int64_t>(this->width,
-				bitVector<int64_t>::makeRepresentable(this->width, *((int64_t *)(&bits))));
+				bitVector<int64_t>::makeRepresentable(this->width, static_cast<int64_t>(bits)));
     }
 
     // Used in addition
@@ -159,9 +159,9 @@ namespace symfpu {
 
       // Reuse the unsigned helper, treating the stored bit pattern as the
       // width-bit two's-complement value to be arithmetically shifted.
-      uint64_t bits(*((uint64_t *)(&this->value)) & bitVector<int64_t>::nOnes(this->width));
+      uint64_t bits(static_cast<uint64_t>(this->value) & bitVector<int64_t>::nOnes(this->width));
       uint64_t shifted(stickyRightShift(true, this->width, bits, static_cast<uint64_t>(op.value)));
-      return bitVector<int64_t>(this->width, *((int64_t *)(&shifted)));
+      return bitVector<int64_t>(this->width, static_cast<int64_t>(shifted));
     }
 
     template<>
@@ -190,9 +190,9 @@ namespace symfpu {
     template <>
     bitVector<int64_t> bitVector<int64_t>::modularNegate (void) const {
       // Negate in unsigned arithmetic to avoid -INT64_MIN signed overflow UB.
-      uint64_t bits(~(*((uint64_t *)(&this->value))) + 1);
+      uint64_t bits(~(static_cast<uint64_t>(this->value)) + 1);
       return bitVector<int64_t>(this->width,
-				bitVector<int64_t>::makeRepresentable(this->width, *((int64_t *)(&bits))));
+				bitVector<int64_t>::makeRepresentable(this->width, static_cast<int64_t>(bits)));
     }
 
 
@@ -219,13 +219,13 @@ namespace symfpu {
     
     template <>
     bitVector<typename modifySignedness<uint64_t>::signedVersion> bitVector<uint64_t>::toSigned (void) const {
-      return bitVector<int64_t>(this->width, *((int64_t *)&this->value));
+      return bitVector<int64_t>(this->width, static_cast<int64_t>(this->value));
     }
 
     template <>
     bitVector<typename modifySignedness<int64_t>::unsignedVersion> bitVector<int64_t>::toUnsigned (void) const {
       // Note we need to mask out the (sign extensions) of the negative part.
-      return bitVector<uint64_t>(this->width, (*((uint64_t *)&this->value)) & bitVector<int64_t>::nOnes(this->width));
+      return bitVector<uint64_t>(this->width, (static_cast<uint64_t>(this->value)) & bitVector<int64_t>::nOnes(this->width));
     }
 
 
