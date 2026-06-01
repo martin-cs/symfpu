@@ -23,10 +23,3 @@ clean :
 
 test : applications/test.o $(LIBFILES)
 	$(CXX) $(CXXFLAGS) $^ -o $@
-
-cbmcverification : applications/cbmcverification.o $(LIBFILES)
-	$(CXX) $(CXXFLAGS) $^ -o $@
-
-generate : applications/generate.o $(LIBFILES)
-	$(CXX) $(CXXFLAGS) $^ -o $@
-

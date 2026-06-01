@@ -753,8 +753,8 @@ template <class t>
    bwt topBit(significandWidth - 2);
    bwt bottomBit(significandWidth - cancelAmount);
 
-   ubv leftExtract(left.getSignificand.extract(topBit, bottomBit));
-   ubv rightExtract(right.getSignificand.extract(topBit, bottomBit));
+   ubv leftExtract(left.getSignificand().extract(topBit, bottomBit));
+   ubv rightExtract(right.getSignificand().extract(topBit, bottomBit));
 
    prop result(ITE(!effectiveAdd && !leftSpecial && !rightSpecial,
 		   ITE(ec.diffIsZero,

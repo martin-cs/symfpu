@@ -43,6 +43,7 @@ namespace symfpu {
     template <bool isSigned>
     bitVector<isSigned> bitVector<isSigned>::maxValue (const bitWidthType &w) {
       if (isSigned) {
+	if (w == 1) { return bitVector<true>::zero(1); }
 	CVC4BV base(w-1, 0U);
 	return bitVector<true>((~base).zeroExtend(1));
       } else {
@@ -108,7 +109,13 @@ namespace symfpu {
     bitVector<false> bitVector<false>::operator / (const bitVector<false> &op) const { return this->CVC4BV::unsignedDivTotal(op); }
 
     template <>
+    bitVector<true> bitVector<true>::operator / (const bitVector<true> &op) const { return this->CVC4BV::signedDivTotal(op); }
+
+    template <>
     bitVector<false> bitVector<false>::operator % (const bitVector<false> &op) const { return this->CVC4BV::unsignedRemTotal(op); }
+
+    template <>
+    bitVector<true> bitVector<true>::operator % (const bitVector<true> &op) const { return this->CVC4BV::signedRemTotal(op); }
 
     template <bool isSigned>
     bitVector<isSigned> bitVector<isSigned>::operator - (void) const { return this->CVC4BV::operator-(); }
@@ -158,6 +165,11 @@ namespace symfpu {
     template <bool isSigned>
     bitVector<isSigned> bitVector<isSigned>::modularAdd (const bitVector<isSigned> &op) const {
       return *this + op;
+    }
+
+    template <bool isSigned>
+    bitVector<isSigned> bitVector<isSigned>::modularSubtract (const bitVector<isSigned> &op) const {
+      return *this - op;
     }
 
     template <bool isSigned>

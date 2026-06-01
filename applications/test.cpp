@@ -177,6 +177,11 @@ typedef sympfuImplementation<uint32_t, traits> singlePrecisionExecutableSymfpu;
 typedef native<uint32_t, float> singlePrecisionHardware;
 
 
+// Tally of comparison mismatches across the run.  main() returns nonzero
+// when this is nonzero so that CI can detect regressions.
+static uint64_t failureCount = 0;
+
+
 
 /*** Output helpers ***/
 
@@ -289,7 +294,9 @@ void unaryFunctionTest (const int verbose, const uint64_t start, const uint64_t 
       uint32_t reference = ref(input);
       uint32_t computed = test(input);
       
-      if (verbose || !singlePrecisionHardware::smtlibEqual(computed, reference)) {
+      bool ok = singlePrecisionHardware::smtlibEqual(computed, reference);
+      if (!ok) { ++failureCount; }
+      if (verbose || !ok) {
 	fprintf(stdout,"vector[%d] ", (uint32_t)i);
 	fprintf(stdout,"input = 0x%x, computed = 0x%x, real = 0x%x\n", input, computed, reference);
 	fflush(stdout);
@@ -381,7 +388,9 @@ void unaryRoundedFunctionTest (const int verbose, const uint64_t start, const ui
       uint32_t reference = ref(input);
       uint32_t computed = test(input);
       
-      if (verbose || !singlePrecisionHardware::smtlibEqual(computed, reference)) {
+      bool ok = singlePrecisionHardware::smtlibEqual(computed, reference);
+      if (!ok) { ++failureCount; }
+      if (verbose || !ok) {
 	fprintf(stdout,"vector[%d] ", (uint32_t)i);
 	fprintf(stdout,"input = 0x%x, computed = 0x%x, real = 0x%x\n", input, computed, reference);
 	fflush(stdout);
@@ -479,7 +488,9 @@ void unaryPredicateTest (const int verbose, const uint64_t start, const uint64_t
       bool reference = ref(input);
       bool computed = test(input);
       
-      if (verbose || !(computed == reference)) {
+      bool ok = (computed == reference);
+      if (!ok) { ++failureCount; }
+      if (verbose || !ok) {
 	fprintf(stdout,"vector[%d] ", (uint32_t)i);
 	fprintf(stdout,"input = 0x%x, computed = %d, real = %d\n", input, computed, reference);
 	fflush(stdout);
@@ -598,7 +609,9 @@ void binaryPredicateTest (const int verbose, const uint64_t start, const uint64_
     bool reference = ref(input1, input2);
     bool computed = test(input1, input2);
     
-    if (verbose || !(computed == reference)) {
+    bool ok = (computed == reference);
+    if (!ok) { ++failureCount; }
+    if (verbose || !ok) {
       fprintf(stdout,"vector[%d -> (%d,%d)] ", (uint32_t)i, (uint32_t)right, (uint32_t)left);
       fprintf(stdout,"input1 = 0x%x, input2 = 0x%x, computed = %d, real = %d\n", input1, input2, computed, reference);
       fflush(stdout);
@@ -721,7 +734,9 @@ void binaryFunctionTest (const int verbose, const uint64_t start, const uint64_t
     uint32_t reference = ref(input1, input2);
     uint32_t computed = test(input1, input2);
 
-    if (verbose || !singlePrecisionHardware::smtlibEqual(computed, reference)) {
+    bool ok = singlePrecisionHardware::smtlibEqual(computed, reference);
+    if (!ok) { ++failureCount; }
+    if (verbose || !ok) {
       fprintf(stdout,"vector[%d -> (%d,%d)] ", (uint32_t)i, (uint32_t)right, (uint32_t)left);
       fprintf(stdout,"input1 = 0x%x, input2 = 0x%x, computed = 0x%x, real = 0x%x\n", input1, input2, computed, reference);
       fflush(stdout);
@@ -844,7 +859,9 @@ void binaryRoundedFunctionTest (const int verbose, const uint64_t start, const u
     uint32_t reference = ref(input1, input2);
     uint32_t computed = test(input1, input2);
 
-    if (verbose || !singlePrecisionHardware::smtlibEqual(computed, reference)) {
+    bool ok = singlePrecisionHardware::smtlibEqual(computed, reference);
+    if (!ok) { ++failureCount; }
+    if (verbose || !ok) {
       fprintf(stdout,"vector[%d -> (%d,%d)] ", (uint32_t)i, (uint32_t)right, (uint32_t)left);
       fprintf(stdout,"input1 = 0x%x, input2 = 0x%x, computed = 0x%x, real = 0x%x\n", input1, input2, computed, reference);
       fflush(stdout);
@@ -1006,7 +1023,9 @@ void ternaryRoundedFunctionTest (const int verbose, const uint64_t start, const 
     uint32_t reference = ref(input1, input2, input3);
     uint32_t computed = test(input1, input2, input3);
 
-    if (verbose || !singlePrecisionHardware::smtlibEqual(computed, reference)) {
+    bool ok = singlePrecisionHardware::smtlibEqual(computed, reference);
+    if (!ok) { ++failureCount; }
+    if (verbose || !ok) {
       fprintf(stdout,"vector[%d -> (%d,%d,%d)] ", (uint32_t)i, (uint32_t)right, (uint32_t)middle, (uint32_t)left);
       fprintf(stdout,"input1 = 0x%x, input2 = 0x%x, input3 = 0x%x, computed = 0x%x, real = 0x%x\n", input1, input2, input3, computed, reference);
       fflush(stdout);
@@ -1149,6 +1168,102 @@ struct roundingModeTestStruct {
 
 
 
+void regressionPrintNoop (const int, const uint64_t, const uint64_t,
+                          const char *, const char *, const char *) {
+}
+
+void regressionCatastrophicCancellationTest (const int verbose, const uint64_t, const uint64_t) {
+  typedef symfpu::simpleExecutable::traits traits;
+  typedef symfpu::unpackedFloat<traits> uf;
+  typedef traits::ubv ubv;
+
+  ubv one(32, 0x3f800000u);
+  ubv kilo(32, 0x44800000u);
+  uf onef(symfpu::unpack<traits>(singlePrecisionFormatObject, one));
+  uf kilof(symfpu::unpack<traits>(singlePrecisionFormatObject, kilo));
+
+  bool sameMinusSame = symfpu::isCatastrophicCancellation<traits>(
+      singlePrecisionFormatObject, onef, onef, 2, false);
+  bool farMinusFar = symfpu::isCatastrophicCancellation<traits>(
+      singlePrecisionFormatObject, onef, kilof, 2, false);
+
+  bool ok = sameMinusSame && !farMinusFar;
+  if (!ok) { ++failureCount; }
+  if (verbose || !ok) { fprintf(stdout, "%s", ok ? "PASS" : "FAIL"); }
+}
+
+void regressionCtorMaxWidthTest (const int verbose, const uint64_t, const uint64_t) {
+  symfpu::simpleExecutable::bitVector<uint64_t> a(64, 1);
+  bool ok = (a.contents() == 1);
+  if (!ok) { ++failureCount; }
+  if (verbose || !ok) { fprintf(stdout, "%s", ok ? "PASS" : "FAIL"); }
+}
+
+void regressionMaxValueWidth64Test (const int verbose, const uint64_t, const uint64_t) {
+  typedef symfpu::simpleExecutable::bitVector<uint64_t> bv;
+  bv mv(bv::maxValue(64));
+  bv expected(64, ~0ULL);
+  bool ok = (mv == expected);
+  if (!ok) { ++failureCount; }
+  if (verbose || !ok) { fprintf(stdout, "%s", ok ? "PASS" : "FAIL"); }
+}
+
+void regressionContractMaskTest (const int verbose, const uint64_t, const uint64_t) {
+  typedef symfpu::simpleExecutable::bitVector<uint64_t> bv;
+  bv a(16, 0x1FF);
+  bv expected(8, 0xFF);
+  bool ok = (a.contract(8) == expected);
+  if (!ok) { ++failureCount; }
+  if (verbose || !ok) { fprintf(stdout, "%s", ok ? "PASS" : "FAIL"); }
+}
+
+void regressionWidth1SignedEqualityTest (const int verbose, const uint64_t, const uint64_t) {
+  typedef symfpu::simpleExecutable::bitVector<int64_t> bv;
+  bv a(1,  1);
+  bv b(1, -1);
+  bool ok = (a == b);
+  if (!ok) { ++failureCount; }
+  if (verbose || !ok) { fprintf(stdout, "%s", ok ? "PASS" : "FAIL"); }
+}
+
+void regressionSignExtendRightShiftTest (const int verbose, const uint64_t, const uint64_t) {
+  typedef symfpu::simpleExecutable::bitVector<int64_t> bv;
+  bv v(8, -2), sh(8, 2);
+  bv expected(8, -1);
+  bool ok = (v.signExtendRightShift(sh) == expected);
+  if (!ok) { ++failureCount; }
+  if (verbose || !ok) { fprintf(stdout, "%s", ok ? "PASS" : "FAIL"); }
+}
+
+void regressionModularAddWrapTest (const int verbose, const uint64_t, const uint64_t) {
+  typedef symfpu::simpleExecutable::bitVector<int64_t> bv;
+  bv a(4, 7), b(4, 1);
+  bv expected(4, -8);
+  bool ok = (a.modularAdd(b) == expected);
+  if (!ok) { ++failureCount; }
+  if (verbose || !ok) { fprintf(stdout, "%s", ok ? "PASS" : "FAIL"); }
+}
+
+void regressionSignExtendAtMaxWidthTest (const int verbose, const uint64_t, const uint64_t) {
+  typedef symfpu::simpleExecutable::bitVector<uint64_t> bv;
+  // Full-width arithmetic shift at maxWidth(); exercises stickyRightShift's 1ULL<<64 path (E9).
+  bv sh(64, 64);
+  bool ok = (bv(64, 0x8000000000000000ULL).signExtendRightShift(sh) == bv(64, ~0ULL)) &&
+            (bv(64, 0x7FFFFFFFFFFFFFFFULL).signExtendRightShift(sh) == bv(64, 0));
+  if (!ok) { ++failureCount; }
+  if (verbose || !ok) { fprintf(stdout, "%s", ok ? "PASS" : "FAIL"); }
+}
+
+void regressionNegateMaxWidthTest (const int verbose, const uint64_t, const uint64_t) {
+  typedef symfpu::simpleExecutable::bitVector<int64_t> bv;
+  // E8 tripwire: -INT64_MIN negation is UB; value-equal at -O0, caught by -fsanitize=undefined.
+  bv v(64, static_cast<int64_t>(0x8000000000000000ULL));
+  bv expected(64, static_cast<int64_t>(0x8000000000000000ULL));
+  bool ok = (v.modularNegate() == expected);
+  if (!ok) { ++failureCount; }
+  if (verbose || !ok) { fprintf(stdout, "%s", ok ? "PASS" : "FAIL"); }
+}
+
 /*** Application ***/
 
 
@@ -1188,6 +1303,15 @@ int main (int argc, char **argv) {
     {0,1,  "round_to_integral", INST(unaryRoundedFunction, rti),        "(fegetround()==FE_TONEAREST) ? rintf(f) : (fegetround()==FE_UPWARD) ? ceilf(f) : (fegetround()==FE_DOWNWARD) ? floorf(f) : truncf(f)",  "(fp.roundToIntegral rm f)"},
     {0,1,                "fma", INST(ternaryRoundedFunction, fma),      "fmaf(f,g)",  "(fp.fma rm f g h)"},
     {0,0,          "remainder", INST(binaryFunction, rem),              "remainderf(f,g)",  "(fp.remainder f g)"},
+    {1,0,  "isCatastrophicCancellation", regressionCatastrophicCancellationTest, regressionPrintNoop, regressionPrintNoop, NULL, NULL},
+    {1,0,  "ctorAtMaxWidth", regressionCtorMaxWidthTest, regressionPrintNoop, regressionPrintNoop, NULL, NULL},
+    {1,0,  "maxValueAtMaxWidth", regressionMaxValueWidth64Test, regressionPrintNoop, regressionPrintNoop, NULL, NULL},
+    {1,0,  "contractMasksHighBits", regressionContractMaskTest, regressionPrintNoop, regressionPrintNoop, NULL, NULL},
+    {1,0,  "width1SignedEquality", regressionWidth1SignedEqualityTest, regressionPrintNoop, regressionPrintNoop, NULL, NULL},
+    {1,0,  "signExtendRightShift", regressionSignExtendRightShiftTest, regressionPrintNoop, regressionPrintNoop, NULL, NULL},
+    {1,0,  "modularAddWrap", regressionModularAddWrapTest, regressionPrintNoop, regressionPrintNoop, NULL, NULL},
+    {1,0,  "signExtendAtMaxWidth", regressionSignExtendAtMaxWidthTest, regressionPrintNoop, regressionPrintNoop, NULL, NULL},
+    {1,0,  "negateAtMaxWidth", regressionNegateMaxWidthTest, regressionPrintNoop, regressionPrintNoop, NULL, NULL},
     {0,0,                 NULL, NULL, NULL, NULL,                           NULL,  NULL}
   };
 
@@ -1421,5 +1545,5 @@ int main (int argc, char **argv) {
 
   singlePrecisionExecutableSymfpu::destroyFormat();
 
-  return 1;
+  return (failureCount == 0) ? 0 : 1;
 }

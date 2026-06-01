@@ -171,7 +171,7 @@ namespace symfpu {
       
       static bitVector<isSigned> minValue (const bitWidthType &w) {
 	if (isSigned) {
-	  return allOnes(w);
+	  return one(1).append(zero(w-1));
 	} else {
 	  return zero(w);
 	}
@@ -279,6 +279,10 @@ namespace symfpu {
 
       inline bitVector<isSigned> modularAdd (const bitVector<isSigned> &op) const {
 	return *this + op;
+      }
+
+      inline bitVector<isSigned> modularSubtract (const bitVector<isSigned> &op) const {
+	return *this - op;
       }
 
       inline bitVector<isSigned> modularNegate () const {
