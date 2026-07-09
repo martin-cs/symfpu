@@ -183,9 +183,11 @@ namespace symfpu {
 			const unpackedFloat<t> &left,
 			const unpackedFloat<t> &right,
 			const typename t::prop &zeroCase) {
-    return ITE(left.getNaN() || ordering(format, left, right, zeroCase),
-	       right,
-	       left);
+    return ITE(left.getSignaling() || right.getSignaling(),
+               unpackedFloat<t>::makeNaN(format),
+               ITE(left.getNaN() || ordering(format, left, right, zeroCase),
+                   right,
+                   left));
   }
 
   // Note that IEEE-754 says that min(+0,-0) = +/-0 and min(-0,+0) = +/- 0
@@ -195,9 +197,11 @@ namespace symfpu {
 			const unpackedFloat<t> &left,
 			const unpackedFloat<t> &right,
 			const typename t::prop &zeroCase) {
-    return ITE(right.getNaN() || ordering(format, left, right, zeroCase),
-	       left,
-	       right);
+    return ITE(left.getSignaling() || right.getSignaling(),
+               unpackedFloat<t>::makeNaN(format),
+               ITE(right.getNaN() || ordering(format, left, right, zeroCase),
+                   left,
+                   right));
   }
 
 
