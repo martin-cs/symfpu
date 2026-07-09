@@ -61,6 +61,7 @@ namespace symfpu {
     prop zeroExponent(packedExponent.isAllZeros());
     prop onesExponent(packedExponent.isAllOnes());
     prop zeroSignificand(significandWithLeadingZero.isAllZeros()); // Shared with normaliseUp
+    prop quietBit(packedSignificand.extract(sigWidth - 1, sigWidth - 1).isAllOnes());
 
     // Identify the cases
     prop isZero(zeroExponent && zeroSignificand);
@@ -68,6 +69,7 @@ namespace symfpu {
     prop isNormal(!zeroExponent && !onesExponent);
     prop isInf(onesExponent && zeroSignificand);
     prop isNaN(onesExponent && !zeroSignificand);
+    prop isSNaN(isNaN && !quietBit);
 
     INVARIANT(isZero || isSubnormal || isNormal || isInf || isNaN);
 
@@ -75,7 +77,9 @@ namespace symfpu {
     
     // Splice together
     unpackedFloat<t> uf(ITE(isNaN,
-			    unpackedFloat<t>::makeNaN(format),
+			    ITE(isSNaN,
+			        unpackedFloat<t>::makeSNaN(format),
+			        unpackedFloat<t>::makeNaN(format)),
 			    ITE(isInf,
 				unpackedFloat<t>::makeInf(format, sign),
 				ITE(isZero,
@@ -149,7 +153,9 @@ namespace symfpu {
     
     ubv packedSig(ITE(hasFixedSignificand,
 		      ITE(uf.getNaN(),
-			  unpackedFloat<t>::nanPattern(packedSigWidth),
+			  ITE(uf.getSignaling(),
+			      ubv::one(packedSigWidth),
+			      unpackedFloat<t>::nanPattern(packedSigWidth)),
 			  ubv::zero(packedSigWidth)),
 		      ITE(inNormalRange,
 			  dropLeadingOne,

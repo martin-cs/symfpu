@@ -48,6 +48,7 @@ namespace symfpu {
     // TODO : protect these again
   public :
     prop nan;
+    prop signaling;
     prop inf;
     prop zero;
 
@@ -60,10 +61,10 @@ namespace symfpu {
     // via the constructor an invalid unpacked float
 
     // A piecewise / literal constructor using fpclass
-    enum fpclass { FPCLASS_NAN, FPCLASS_INF, FPCLASS_ZERO, FPCLASS_NUMBER };
+    enum fpclass { FPCLASS_NAN, FPCLASS_SNAN, FPCLASS_INF, FPCLASS_ZERO, FPCLASS_NUMBER };
 
     unpackedFloat (const fpclass c, const prop &s, const sbv &exp, const ubv &signif) : 
-      nan(c == FPCLASS_NAN), inf(c == FPCLASS_INF), zero(c == FPCLASS_ZERO),
+      nan(c == FPCLASS_NAN || c == FPCLASS_SNAN), signaling(c == FPCLASS_SNAN), inf(c == FPCLASS_INF), zero(c == FPCLASS_ZERO),
       sign(s), exponent(exp), significand(signif)
       {}
 
@@ -73,10 +74,14 @@ namespace symfpu {
 
     // TODO : See above -- this should only be used by ite
   public :
-    unpackedFloat (const prop &iteNaN, const prop &iteInf, const prop &iteZero,
+    unpackedFloat (const prop &iteNaN, const prop &iteSignaling, const prop &iteInf, const prop &iteZero,
 		   const prop &iteSign, const sbv &iteExponent, const ubv &iteSignificand) :
-      nan(iteNaN), inf(iteInf), zero(iteZero),
+      nan(iteNaN), signaling(iteSignaling), inf(iteInf), zero(iteZero),
       sign(iteSign), exponent(iteExponent), significand(iteSignificand)
+      {}
+    unpackedFloat (const prop &iteNaN, const prop &iteInf, const prop &iteZero,
+       const prop &iteSign, const sbv &iteExponent, const ubv &iteSignificand) :
+      unpackedFloat(iteNaN, false, iteInf, iteZero, iteSign, iteExponent, iteSignificand)
       {}
   private :
 
@@ -97,18 +102,18 @@ namespace symfpu {
 
   public :
     unpackedFloat (const prop &s, const sbv &exp, const ubv &signif) : 
-      nan(false), inf(false), zero(false),
+      nan(false), signaling(false), inf(false), zero(false),
       sign(s), exponent(exp), significand(signif)
       {}
 
     unpackedFloat (const unpackedFloat<t> &old) :
-      nan(old.nan), inf(old.inf), zero(old.zero),
+      nan(old.nan), signaling(old.signaling), inf(old.inf), zero(old.zero),
       sign(old.sign), exponent(old.exponent), significand(old.significand)
       {}
 
     // Copy and over-write sign
     unpackedFloat (const unpackedFloat<t> &old, const prop &s) : 
-      nan(old.nan), inf(old.inf), zero(old.zero),
+      nan(old.nan), signaling(old.signaling), inf(old.inf), zero(old.zero),
       sign(ITE(old.nan, old.sign, s)), exponent(old.exponent), significand(old.significand)
       {}
 
@@ -117,7 +122,7 @@ namespace symfpu {
 
     template <class s>
     unpackedFloat (const unpackedFloat<s> &old) :
-      nan(old.nan), inf(old.inf), zero(old.zero),
+      nan(old.nan), signaling(old.signaling), inf(old.inf), zero(old.zero),
       sign(old.sign), exponent(old.exponent), significand(old.significand)
       {}
       
@@ -145,7 +150,12 @@ namespace symfpu {
       return unpackedFloat<t>(FPCLASS_NAN, false, defaultExponent(unpackedFloat<t>::exponentWidth(fmt)), defaultSignificand(unpackedFloat<t>::significandWidth(fmt)));
     }
 
+    static unpackedFloat<t> makeSNaN(const fpt &fmt) {
+      return unpackedFloat<t>(FPCLASS_SNAN, false, defaultExponent(unpackedFloat<t>::exponentWidth(fmt)), defaultSignificand(unpackedFloat<t>::significandWidth(fmt)));
+    }
+
     inline const prop & getNaN(void) const { return this->nan; }
+    inline const prop & getSignaling(void) const { return this->signaling; }
     inline const prop & getInf(void) const { return this->inf; }
     inline const prop & getZero(void) const { return this->zero; }
     inline const prop & getSign(void) const { return this->sign; }
@@ -298,6 +308,7 @@ namespace symfpu {
 
     unpackedFloat<t> extend (const bwt expExtension, const bwt sigExtension) const {
       return unpackedFloat<t>(this->nan, 
+			      this->signaling,
 			      this->inf,
 			      this->zero,
 			      this->sign,
@@ -545,6 +556,7 @@ template <class t>
 			    const unpackedFloat<t> &l,					
 			    const unpackedFloat<t> &r) {				
     return unpackedFloat<t>(ITE(cond, l.nan, r.nan),
+			    ITE(cond, l.signaling, r.signaling),
 			    ITE(cond, l.inf, r.inf),
 			    ITE(cond, l.zero, r.zero),
 			    ITE(cond, l.sign, r.sign),
