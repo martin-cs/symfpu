@@ -1186,7 +1186,7 @@ int main (int argc, char **argv) {
     {0,0,                "min", INST(binaryFunction, min),              "fminf(f,g)",  "(fp.min f g)"},
     {0,1,               "sqrt", INST(unaryRoundedFunction, sqrt),       "sqrtf(f)",  "(fp.sqrt rm f)"},
     {0,1,  "round_to_integral", INST(unaryRoundedFunction, rti),        "(fegetround()==FE_TONEAREST) ? rintf(f) : (fegetround()==FE_UPWARD) ? ceilf(f) : (fegetround()==FE_DOWNWARD) ? floorf(f) : truncf(f)",  "(fp.roundToIntegral rm f)"},
-    {0,1,                "fma", INST(ternaryRoundedFunction, fma),      "fmaf(f,g)",  "(fp.fma rm f g h)"},
+    {0,1,                "fma", INST(ternaryRoundedFunction, fma),      "fmaf(f,g,h)",  "(fp.fma rm f g h)"},
     {0,0,          "remainder", INST(binaryFunction, rem),              "remainderf(f,g)",  "(fp.remainder f g)"},
     {0,0,                 NULL, NULL, NULL, NULL,                           NULL,  NULL}
   };
