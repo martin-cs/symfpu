@@ -1142,9 +1142,9 @@ static bool packedNaN (const fpt &f, uint64_t bits) {
 
 static void compare (const fpt &f, uint64_t in, uint64_t computed, uint64_t expected) {
   if (computed != expected && !(packedNaN(f, computed) && packedNaN(f, expected))) {
-    fprintf(stdout, "\n(%u, %u) input = 0x%lx, computed = 0x%lx, expected = 0x%lx",
-	    (unsigned)f.exponentWidth(), (unsigned)f.significandWidth(),
-	    (unsigned long)in, (unsigned long)computed, (unsigned long)expected);
+    fprintf(stdout, "\n(%u, %u) input = 0x%x, computed = 0x%x, expected = 0x%x",
+	    (uint32_t)f.exponentWidth(), (uint32_t)f.significandWidth(),
+	    (uint32_t)in, (uint32_t)computed, (uint32_t)expected);
     fflush(stdout);
   }
 
