@@ -119,7 +119,9 @@ unpackedFloat<t> roundToIntegral (const typename t::fpt &format,
   // Round
   ubv significand(input.getSignificand());
   bwt significandWidth(significand.getWidth());
-  ubv roundingPoint((significandWidth >= exponentWidth) ?
+  // collaredRoundingPoint is exponentWidth + 1 wide, so matchWidth, which may only
+  // widen, needs significandWidth to be at least that
+  ubv roundingPoint((significandWidth > exponentWidth) ?
 		    collaredRoundingPoint.toUnsigned().matchWidth(significand) :
 		    collaredRoundingPoint.toUnsigned().extract(significandWidth - 1, 0));
   // Extract is safe because of the collar

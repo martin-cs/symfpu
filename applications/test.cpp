@@ -166,6 +166,7 @@ float getTestValue (uint64_t index) {
 // We are testing the 'simple executable' back-end
 typedef symfpu::simpleExecutable::traits traits;
 typedef traits::fpt fpt;
+typedef traits::ubv ubv;
 
 // We are also testing it only for single precision
 traits::fpt singlePrecisionFormatObject(8,24);
@@ -1124,6 +1125,93 @@ void ternaryRoundedFunctionPrintSMT (const int /*verbose*/, const uint64_t start
 
 
 
+/*** Format Sweeps ***/
+
+// Everything above is single precision, checked against the hardware.  There
+// is no hardware reference for the other formats, so these sweep a few of
+// them and check self-consistency instead.  The packed value is the test
+// vector number, so -s, -e and -t select a range of it as usual; the default
+// end is past every format used here, making the sweeps exhaustive.
+
+// pack() canonicalises NaN, so the payload does not survive a round trip.
+static bool packedNaN (const fpt &f, uint64_t bits) {
+  uint64_t sigWidth = f.packedSignificandWidth();
+  uint64_t exMask = (1ULL << f.packedExponentWidth()) - 1;
+
+  return ((bits >> sigWidth) & exMask) == exMask && (bits & ((1ULL << sigWidth) - 1)) != 0;
+}
+
+static void checkPacked (const int verbose, const fpt &f, uint64_t in, uint64_t computed, uint64_t expected) {
+  if (verbose || (computed != expected && !(packedNaN(f, computed) && packedNaN(f, expected)))) {
+    fprintf(stdout, "\n(%u, %u) input = 0x%x, computed = 0x%x, expected = 0x%x",
+	    (uint32_t)f.exponentWidth(), (uint32_t)f.significandWidth(),
+	    (uint32_t)in, (uint32_t)computed, (uint32_t)expected);
+    fflush(stdout);
+  }
+
+  return;
+}
+
+static uint64_t unpackPackBits (const fpt &f, uint64_t bits) {
+  return symfpu::pack<traits>(f, symfpu::unpack<traits>(f, ubv(f.packedWidth(), bits))).contents();
+}
+
+static uint64_t rtiBits (const fpt &f, const traits::rm &m, uint64_t bits) {
+  return symfpu::pack<traits>(f, symfpu::roundToIntegral<traits>(f, m, symfpu::unpack<traits>(f, ubv(f.packedWidth(), bits)))).contents();
+}
+
+// unpack() then pack() is the identity.  A significand of three bits or fewer
+// gives the unpacked exponent width that unpack()'s INVARIANT constrains.
+#define NUMBER_OF_SMALL_SIGNIFICAND_FORMATS 6
+void smallSignificandFormatTest (const int verbose, const uint64_t start, const uint64_t end) {
+  const fpt formats[NUMBER_OF_SMALL_SIGNIFICAND_FORMATS] =
+    { fpt(2,2), fpt(2,3), fpt(3,2), fpt(3,3), fpt(5,2), fpt(8,3) };
+
+  for (unsigned n = 0; n < NUMBER_OF_SMALL_SIGNIFICAND_FORMATS; ++n) {
+    uint64_t limit = 1ULL << formats[n].packedWidth();
+
+    for (uint64_t i = start; i < end && i < limit; ++i) {
+      checkPacked(verbose, formats[n], i, unpackPackBits(formats[n], i), i);
+    }
+    fprintf(stdout, ".");
+    fflush(stdout);
+  }
+
+  return;
+}
+
+// roundToIntegral() reaches an integral value, so applying it twice is the
+// same as applying it once.  These formats have equal unpacked exponent and
+// significand widths, the boundary it resizes its rounding point across.
+#define NUMBER_OF_EQUAL_UNPACKED_WIDTH_FORMATS 4
+void equalUnpackedWidthFormatTest (const int verbose, const uint64_t start, const uint64_t end) {
+  const fpt formats[NUMBER_OF_EQUAL_UNPACKED_WIDTH_FORMATS] =
+    { fpt(3,4), fpt(4,5), fpt(5,6), fpt(8,9) };
+  const traits::rm modes[SYMFPU_NUMBER_OF_ROUNDING_MODES] =
+    { traits::RNE(), traits::RNA(), traits::RTP(), traits::RTN(), traits::RTZ() };
+
+  for (unsigned n = 0; n < NUMBER_OF_EQUAL_UNPACKED_WIDTH_FORMATS; ++n) {
+    uint64_t limit = 1ULL << formats[n].packedWidth();
+
+    for (unsigned m = 0; m < SYMFPU_NUMBER_OF_ROUNDING_MODES; ++m) {
+      for (uint64_t i = start; i < end && i < limit; ++i) {
+	uint64_t once = rtiBits(formats[n], modes[m], i);
+	checkPacked(verbose, formats[n], i, rtiBits(formats[n], modes[m], once), once);
+      }
+    }
+    fprintf(stdout, ".");
+    fflush(stdout);
+  }
+
+  return;
+}
+
+void formatSweepPrint (const int, const uint64_t, const uint64_t, const char *, const char *, const char *) {
+  fprintf(stdout, "not supported for format sweeps");
+  return;
+}
+
+
 typedef void (*testFunction) (const int, const uint64_t, const uint64_t);
 typedef void (*printFunction) (const int, const uint64_t, const uint64_t, const char *, const char *, const char *);
 
@@ -1188,6 +1276,8 @@ int main (int argc, char **argv) {
     {0,1,  "round_to_integral", INST(unaryRoundedFunction, rti),        "(fegetround()==FE_TONEAREST) ? rintf(f) : (fegetround()==FE_UPWARD) ? ceilf(f) : (fegetround()==FE_DOWNWARD) ? floorf(f) : truncf(f)",  "(fp.roundToIntegral rm f)"},
     {0,1,                "fma", INST(ternaryRoundedFunction, fma),      "fmaf(f,g)",  "(fp.fma rm f g h)"},
     {0,0,          "remainder", INST(binaryFunction, rem),              "remainderf(f,g)",  "(fp.remainder f g)"},
+    {0,0, "smallSignificandFormats", smallSignificandFormatTest, formatSweepPrint, formatSweepPrint, NULL, NULL},
+    {0,0,"equalUnpackedWidthFormats", equalUnpackedWidthFormatTest, formatSweepPrint, formatSweepPrint, NULL, NULL},
     {0,0,                 NULL, NULL, NULL, NULL,                           NULL,  NULL}
   };
 
@@ -1248,6 +1338,8 @@ int main (int argc, char **argv) {
     {             "rti",        no_argument,               &(tests[21].enable),  1 },
     {             "fma",        no_argument,               &(tests[22].enable),  1 },
     {       "remainder",        no_argument,               &(tests[23].enable),  1 },
+    {"smallSignificandFormats",  no_argument,               &(tests[24].enable),  1 },
+    {"equalUnpackedWidthFormats", no_argument,              &(tests[25].enable),  1 },
     {             "rne",        no_argument,    &(roundingModeTests[0].enable),  1 },
     {             "rtp",        no_argument,    &(roundingModeTests[1].enable),  1 },
     {             "rtn",        no_argument,    &(roundingModeTests[2].enable),  1 },
