@@ -166,6 +166,8 @@ float getTestValue (uint64_t index) {
 // We are testing the 'simple executable' back-end
 typedef symfpu::simpleExecutable::traits traits;
 typedef traits::fpt fpt;
+typedef traits::ubv ubv;
+typedef symfpu::unpackedFloat<traits> uf;
 
 // We are also testing it only for single precision
 traits::fpt singlePrecisionFormatObject(8,24);
@@ -1124,6 +1126,76 @@ void ternaryRoundedFunctionPrintSMT (const int /*verbose*/, const uint64_t start
 
 
 
+/*** Format Conversion ***/
+
+// Everything above is single precision, checked against the hardware.  There
+// is no hardware reference for convertFloatToFloat, so check it against
+// itself : widening to a format that contains the source loses nothing, so
+// converting through one must agree with converting straight to the target.
+// Both sides are packed, which canonicalises NaN, so they compare directly.
+// The packed source value is the test vector number, so -s, -e and -t select
+// a range of it as usual.
+
+struct conversionStruct {
+  const fpt source;
+  const fpt wide;
+  const fpt target;
+};
+
+#define NUMBER_OF_CONVERSIONS 3
+void convertFormatTest (const int verbose, const uint64_t start, const uint64_t end) {
+  const conversionStruct conversions[NUMBER_OF_CONVERSIONS] = {
+    // The target's exponent range shrinks while the unpacked exponent width
+    // does not, which is where the promotion fast path was taken wrongly
+    { fpt(3,4), fpt(4,6), fpt(2,5) },
+    { fpt(3,6), fpt(4,8), fpt(2,7) },
+    // Control : here the unpacked width shrinks while the format's does not,
+    // the case that widening the extension guard as well would break
+    { fpt(2,6), fpt(3,8), fpt(2,4) }
+  };
+  const traits::rm modes[SYMFPU_NUMBER_OF_ROUNDING_MODES] =
+    { traits::RNE(), traits::RNA(), traits::RTP(), traits::RTN(), traits::RTZ() };
+
+  for (unsigned n = 0; n < NUMBER_OF_CONVERSIONS; ++n) {
+    const fpt &source = conversions[n].source;
+    const fpt &wide = conversions[n].wide;
+    const fpt &target = conversions[n].target;
+    uint64_t limit = 1ULL << source.packedWidth();
+
+    for (unsigned m = 0; m < SYMFPU_NUMBER_OF_ROUNDING_MODES; ++m) {
+      for (uint64_t i = start; i < end && i < limit; ++i) {
+	uf input(symfpu::unpack<traits>(source, ubv(source.packedWidth(), i)));
+
+	uint64_t direct = symfpu::pack<traits>(target,
+	  symfpu::convertFloatToFloat<traits>(source, target, modes[m], input)).contents();
+
+	uint64_t viaWide = symfpu::pack<traits>(target,
+	  symfpu::convertFloatToFloat<traits>(wide, target, modes[m],
+	    symfpu::convertFloatToFloat<traits>(source, wide, modes[m], input))).contents();
+
+	if (verbose || direct != viaWide) {
+	  fprintf(stdout, "\n(%u, %u) -> (%u, %u) input = 0x%x, computed = 0x%x, via (%u, %u) = 0x%x",
+		  (uint32_t)source.exponentWidth(), (uint32_t)source.significandWidth(),
+		  (uint32_t)target.exponentWidth(), (uint32_t)target.significandWidth(),
+		  (uint32_t)i, (uint32_t)direct,
+		  (uint32_t)wide.exponentWidth(), (uint32_t)wide.significandWidth(), (uint32_t)viaWide);
+	  fflush(stdout);
+	}
+      }
+    }
+    fprintf(stdout, ".");
+    fflush(stdout);
+  }
+
+  return;
+}
+
+void convertFormatPrint (const int, const uint64_t, const uint64_t, const char *, const char *, const char *) {
+  fprintf(stdout, "not supported for the conversion test");
+  return;
+}
+
+
 typedef void (*testFunction) (const int, const uint64_t, const uint64_t);
 typedef void (*printFunction) (const int, const uint64_t, const uint64_t, const char *, const char *, const char *);
 
@@ -1188,6 +1260,7 @@ int main (int argc, char **argv) {
     {0,1,  "round_to_integral", INST(unaryRoundedFunction, rti),        "(fegetround()==FE_TONEAREST) ? rintf(f) : (fegetround()==FE_UPWARD) ? ceilf(f) : (fegetround()==FE_DOWNWARD) ? floorf(f) : truncf(f)",  "(fp.roundToIntegral rm f)"},
     {0,1,                "fma", INST(ternaryRoundedFunction, fma),      "fmaf(f,g)",  "(fp.fma rm f g h)"},
     {0,0,          "remainder", INST(binaryFunction, rem),              "remainderf(f,g)",  "(fp.remainder f g)"},
+    {0,0,     "convertFormats", convertFormatTest, convertFormatPrint, convertFormatPrint, NULL, NULL},
     {0,0,                 NULL, NULL, NULL, NULL,                           NULL,  NULL}
   };
 
@@ -1248,6 +1321,7 @@ int main (int argc, char **argv) {
     {             "rti",        no_argument,               &(tests[21].enable),  1 },
     {             "fma",        no_argument,               &(tests[22].enable),  1 },
     {       "remainder",        no_argument,               &(tests[23].enable),  1 },
+    {  "convertFormats",        no_argument,               &(tests[24].enable),  1 },
     {             "rne",        no_argument,    &(roundingModeTests[0].enable),  1 },
     {             "rtp",        no_argument,    &(roundingModeTests[1].enable),  1 },
     {             "rtn",        no_argument,    &(roundingModeTests[2].enable),  1 },
