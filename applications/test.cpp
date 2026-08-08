@@ -1128,7 +1128,9 @@ void ternaryRoundedFunctionPrintSMT (const int /*verbose*/, const uint64_t start
 
 // Everything above is single precision, checked against the hardware.  There
 // is no hardware reference for the other formats, so these sweep a few of
-// them exhaustively and check self-consistency instead.
+// them and check self-consistency instead.  The packed value is the test
+// vector number, so -s, -e and -t select a range of it as usual; the default
+// end is past every format used here, making the sweeps exhaustive.
 
 typedef traits::ubv ubv;
 
@@ -1140,8 +1142,8 @@ static bool packedNaN (const fpt &f, uint64_t bits) {
   return ((bits >> sigWidth) & exMask) == exMask && (bits & ((UINT64_C(1) << sigWidth) - 1)) != 0;
 }
 
-static void compare (const fpt &f, uint64_t in, uint64_t computed, uint64_t expected) {
-  if (computed != expected && !(packedNaN(f, computed) && packedNaN(f, expected))) {
+static void checkPacked (const int verbose, const fpt &f, uint64_t in, uint64_t computed, uint64_t expected) {
+  if (verbose || (computed != expected && !(packedNaN(f, computed) && packedNaN(f, expected)))) {
     fprintf(stdout, "\n(%u, %u) input = 0x%x, computed = 0x%x, expected = 0x%x",
 	    (uint32_t)f.exponentWidth(), (uint32_t)f.significandWidth(),
 	    (uint32_t)in, (uint32_t)computed, (uint32_t)expected);
@@ -1161,12 +1163,14 @@ static uint64_t rtiBits (const fpt &f, const traits::rm &m, uint64_t bits) {
 
 // unpack() then pack() is the identity.  A significand of three bits or fewer
 // gives the unpacked exponent width that unpack()'s INVARIANT constrains.
-void smallSignificandFormatTest (const int /*verbose*/, const uint64_t, const uint64_t) {
+void smallSignificandFormatTest (const int verbose, const uint64_t start, const uint64_t end) {
   const fpt formats[] = { fpt(2,2), fpt(2,3), fpt(3,2), fpt(3,3), fpt(5,2), fpt(8,3) };
 
   for (unsigned n = 0; n < sizeof(formats)/sizeof(formats[0]); ++n) {
-    for (uint64_t i = 0; i < (UINT64_C(1) << formats[n].packedWidth()); ++i) {
-      compare(formats[n], i, unpackPackBits(formats[n], i), i);
+    uint64_t limit = UINT64_C(1) << formats[n].packedWidth();
+
+    for (uint64_t i = start; i < end && i < limit; ++i) {
+      checkPacked(verbose, formats[n], i, unpackPackBits(formats[n], i), i);
     }
     fprintf(stdout, ".");
     fflush(stdout);
@@ -1178,15 +1182,17 @@ void smallSignificandFormatTest (const int /*verbose*/, const uint64_t, const ui
 // roundToIntegral() reaches an integral value, so applying it twice is the
 // same as applying it once.  These formats have equal unpacked exponent and
 // significand widths, the boundary it resizes its rounding point across.
-void equalUnpackedWidthFormatTest (const int /*verbose*/, const uint64_t, const uint64_t) {
+void equalUnpackedWidthFormatTest (const int verbose, const uint64_t start, const uint64_t end) {
   const fpt formats[] = { fpt(3,4), fpt(4,5), fpt(5,6), fpt(8,9) };
   const traits::rm modes[] = { traits::RNE(), traits::RNA(), traits::RTP(), traits::RTN(), traits::RTZ() };
 
   for (unsigned n = 0; n < sizeof(formats)/sizeof(formats[0]); ++n) {
+    uint64_t limit = UINT64_C(1) << formats[n].packedWidth();
+
     for (unsigned m = 0; m < sizeof(modes)/sizeof(modes[0]); ++m) {
-      for (uint64_t i = 0; i < (UINT64_C(1) << formats[n].packedWidth()); ++i) {
+      for (uint64_t i = start; i < end && i < limit; ++i) {
 	uint64_t once = rtiBits(formats[n], modes[m], i);
-	compare(formats[n], i, rtiBits(formats[n], modes[m], once), once);
+	checkPacked(verbose, formats[n], i, rtiBits(formats[n], modes[m], once), once);
       }
     }
     fprintf(stdout, ".");
