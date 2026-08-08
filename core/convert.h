@@ -32,10 +32,20 @@ unpackedFloat<t> convertFloatToFloat (const typename t::fpt &sourceFormat,
   //typedef typename t::sbv sbv;
 
   // increased includes equality
-  bool exponentIncreased = unpackedFloat<t>::exponentWidth(sourceFormat) <= unpackedFloat<t>::exponentWidth(targetFormat);
+
+  // The width expExtension measures.  It can shrink where the format's
+  // exponent does not, (2,6) -> (2,4) goes 4 -> 3, so it is what keeps that
+  // subtraction non-negative
+  bool unpackedExponentIncreased = unpackedFloat<t>::exponentWidth(sourceFormat) <= unpackedFloat<t>::exponentWidth(targetFormat);
+
+  // Whether the target can represent every source exponent, which is what the
+  // fast path needs.  A narrowing target can still have an equal or larger
+  // unpacked width, so testing that one takes the fast path for a narrowing
+  bool exponentIncreased = sourceFormat.exponentWidth() <= targetFormat.exponentWidth();
+
   bool significandIncreased = unpackedFloat<t>::significandWidth(sourceFormat) <= unpackedFloat<t>::significandWidth(targetFormat);
 
-  bwt expExtension = (exponentIncreased) ? unpackedFloat<t>::exponentWidth(targetFormat) - unpackedFloat<t>::exponentWidth(sourceFormat) : 0;
+  bwt expExtension = (unpackedExponentIncreased) ? unpackedFloat<t>::exponentWidth(targetFormat) - unpackedFloat<t>::exponentWidth(sourceFormat) : 0;
 
   // Format sizes are literal so it is safe to branch on them
   if (exponentIncreased && significandIncreased) {
