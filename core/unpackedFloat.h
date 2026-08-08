@@ -188,8 +188,9 @@ namespace symfpu {
 
       if (formatSignificandWidth <= 3) {
 	// Subnormals fit into the gap between minimum normal exponent and what is represenatble
-	// using a signed number
-	return formatExponentWidth;
+	// using a signed number, but unpack() extends the packed exponent into this
+	// width and needs a bit of headroom for the sign
+	return formatExponentWidth + 1;
       }
 
       bwt bitsNeededForSubnormals = bitsToRepresent(format.significandWidth() - 3);
